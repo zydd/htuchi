@@ -1,0 +1,9 @@
+<RCC>
+    <qresource prefix="/res">
+        <file>img/onoff.png</file>
+        <file>img/away.png</file>
+        <file>img/offline.png</file>
+        <file>img/online.png</file>
+        <file>img/tools.png</file>
+    </qresource>
+</RCC>
