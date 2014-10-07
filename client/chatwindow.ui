@@ -22,6 +22,10 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>messageEdit</tabstop>
+  <tabstop>messageBrowser</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

@@ -133,6 +133,11 @@
   </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
+ <tabstops>
+  <tabstop>contacts</tabstop>
+  <tabstop>buttonOnOff</tabstop>
+  <tabstop>toolButton</tabstop>
+ </tabstops>
  <resources/>
  <connections>
   <connection>

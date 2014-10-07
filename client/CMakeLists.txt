@@ -2,7 +2,18 @@ find_package(Qt4 REQUIRED)
 
 include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR})
 
-set(Hamatuchi_SRCS client.cpp mainwindow.cpp userdelegate.cpp contactsmodel.cpp chatwindow.cpp ../packet.cpp ../abstract_layer.cpp ../connection_layer.cpp ../event_loop.cpp)
+set(Hamatuchi_SRCS
+    client.cpp
+    mainwindow.cpp
+    userdelegate.cpp
+    contactsmodel.cpp
+    chatwindow.cpp
+    ../packet.cpp
+    ../abstract_layer.cpp
+    ../basic_connection_layer.cpp
+    ../connect_layer.cpp
+    ../event_loop.cpp)
+
 set(Hamatuchi_HDRS mainwindow.h userdelegate.h contactsmodel.h chatwindow.h)
 set(Hamatuchi_FORMS mainwindow.ui chatwindow.ui)
 set(Hamatuchi_RES res.qrc)

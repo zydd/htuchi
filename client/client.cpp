@@ -33,11 +33,10 @@ int main(int argc, char *argv[])
     std::thread thread([&io_service](){io_service.run();});
     std::thread thread2([](){main_event_loop.run();});
 
-    connection_layer conn(io_service);
+    connect_layer conn(io_service, {"localhost", "4000"});
     ChatWindow w;
 
     conn.insertAbove(&w);
-    conn.connect({"localhost", "4000"});
 
     w.setWindowTitle("Client");
     w.show();
