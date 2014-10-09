@@ -9,9 +9,9 @@ add_executable(hamatuchid
                ../abstract_layer.cpp
                ../event_loop.cpp
                ../crossover_layer.cpp
+               ../reflector_layer.cpp
                ../packet.cpp
-               ../basic_connection_layer.cpp
-               ../listen_layer.cpp
+               ../connection_layer.cpp
                ../client/chatwindow.cpp
                ${Hamatuchi_HDRS_MOC} ${Hamatuchi_FORMS_HDRS})
 

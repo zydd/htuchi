@@ -10,8 +10,7 @@ set(Hamatuchi_SRCS
     chatwindow.cpp
     ../packet.cpp
     ../abstract_layer.cpp
-    ../basic_connection_layer.cpp
-    ../connect_layer.cpp
+    ../connection_layer.cpp
     ../event_loop.cpp)
 
 set(Hamatuchi_HDRS mainwindow.h userdelegate.h contactsmodel.h chatwindow.h)

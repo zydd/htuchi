@@ -8,8 +8,8 @@ class abstract_layer
 {
 public:
     virtual ~abstract_layer();
-    virtual void processIn(const packet &data) = 0;
-    virtual void processOut(const packet &data) = 0;
+    virtual void processIn(packet &&data) = 0;
+    virtual void processOut(packet &&data) = 0;
     void insertAbove(abstract_layer *above);
     void insertBelow(abstract_layer *below);
 

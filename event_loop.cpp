@@ -1,6 +1,6 @@
 #include "event_loop.h"
 #include <QDebug>
-event_loop main_event_loop;
+event_loop default_event_loop;
 
 event_loop::event_loop()
 {

@@ -20,6 +20,6 @@ private:
     std::deque<std::function<void(void)>> _tasks;
 };
 
-extern event_loop main_event_loop;
+extern event_loop default_event_loop;
 
 #endif // EVENT_LOOP_H

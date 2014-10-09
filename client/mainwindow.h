@@ -5,7 +5,7 @@
 #include <QMainWindow>
 #include <QModelIndex>
 
-#include "../connect_layer.h"
+#include "../connection_layer.h"
 #include "contactsmodel.h"
 
 namespace Ui {

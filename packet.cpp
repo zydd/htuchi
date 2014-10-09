@@ -15,7 +15,6 @@ packet::packet(const QByteArray &data)
 { }
 
 packet::packet(std::unique_ptr<char[]> data, const std::size_t &size)
-    : _size(size)
 {
     _data.emplace_back(std::move(data), size);
 }
@@ -27,10 +26,10 @@ packet::packet(const char *data, const std::size_t &size)
 
 template<typename Itr>
 packet::packet(Itr begin, Itr end)
-    : _size(std::distance(begin, end))
 {
-    auto data = new char[_size];
-    _data.emplace_back(std::move(std::unique_ptr<char[]>(data)), _size);
+    std::size_t size = std::distance(begin, end);
+    auto data = new char[size];
+    _data.emplace_back(std::move(std::unique_ptr<char[]>(data)), size);
     std::copy(begin, end, data);
 }
 
@@ -48,7 +47,7 @@ QByteArray packet::toByteArray(const QVariant &data)
 
 char* packet::seriallize() const
 {
-    auto ret = new char[_size];
+    auto ret = new char[size()];
     for (auto itr = _data.begin(), end = _data.end(); itr != end; ++itr) {
         int i = 0;
         std::copy(itr->first.get(), itr->first.get() + itr->second, ret + i);

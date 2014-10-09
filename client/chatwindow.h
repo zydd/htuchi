@@ -18,8 +18,8 @@ class ChatWindow : public QDialog, public abstract_layer
 public:
     ChatWindow();
     ~ChatWindow();
-    virtual void processIn(const packet& data);
-    virtual void processOut(const packet& data);
+    virtual void processIn(packet &&data);
+    virtual void processOut(packet &&data);
 
 private slots:
     void send();

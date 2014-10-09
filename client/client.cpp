@@ -31,9 +31,10 @@ int main(int argc, char *argv[])
     asio::io_service io_service;
     asio::io_service::work work(io_service);
     std::thread thread([&io_service](){io_service.run();});
-    std::thread thread2([](){main_event_loop.run();});
+    std::thread thread2([](){default_event_loop.run();});
 
-    connect_layer conn(io_service, {"localhost", "4000"});
+    connection_layer<> conn(io_service);
+    conn.connect({"localhost", "4000"});
     ChatWindow w;
 
     conn.insertAbove(&w);
@@ -44,7 +45,7 @@ int main(int argc, char *argv[])
 
     conn.close();
     io_service.stop();
-    main_event_loop.stop();
+    default_event_loop.stop();
     thread.join();
     thread2.join();
     return 0;

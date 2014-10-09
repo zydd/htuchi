@@ -10,6 +10,8 @@
 class packet
 {
 public:
+    int id = -1;
+
     packet();
     packet(const std::string &str);
     packet(const QVariant &data);
@@ -20,12 +22,16 @@ public:
     ~packet();
 
     char *seriallize() const;
-    inline std::size_t size() const
-    { return _size; }
+    inline std::size_t size() const {
+        std::size_t size = 0;
+        for (auto itr = _data.begin(), end = _data.end(); itr != end; ++itr)
+            size += itr->second;
+        return size;
+    }
 
 private:
     std::vector<std::pair<std::unique_ptr<char[]>, std::size_t>> _data;
-    std::size_t _size;
+
     packet(const QByteArray &data);
     static QByteArray toByteArray(const QVariant &data);
 };
