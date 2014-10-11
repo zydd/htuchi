@@ -1,28 +1,21 @@
-#ifndef CONNECTION_LAYER_CPP
-#define CONNECTION_LAYER_CPP
-
 #include "connection_layer.h"
 
-template<typename Socket>
-connection_layer<Socket>::connection_layer(asio::io_service &io_service)
+connection_layer::connection_layer(asio::io_service &io_service)
     : _io_service(io_service),
       _socket(io_service)
 { }
 
-template<typename Socket>
-connection_layer<Socket>::~connection_layer()
+connection_layer::~connection_layer()
 { }
 
-template<typename Socket>
-void connection_layer<Socket>::_listen(const tcp::endpoint &endpoint)
+void connection_layer::_listen(const tcp::endpoint &endpoint)
 {
     int id = ++_id;
     _acceptors.emplace(id, tcp::acceptor(_io_service, endpoint));
     accept(id);
 }
 
-template<typename Socket>
-void connection_layer<Socket>::accept(int id)
+void connection_layer::accept(int id)
 {
     auto acc = _acceptors.find(id);
     if (acc == _acceptors.end()) return;
@@ -40,14 +33,12 @@ void connection_layer<Socket>::accept(int id)
     });
 }
 
-
-template<typename Socket>
-void connection_layer<Socket>::_connect(const tcp::resolver::query &query)
+void connection_layer::_connect(const tcp::resolver::query &query)
 {
     int id = ++_id;
-    auto conn = _connections.emplace(id, Socket(_io_service));
+    auto conn = _connections.emplace(id, tcp::socket(_io_service));
     _queries.emplace(id, query);
-    Socket &socket = conn.first->second;
+    tcp::socket &socket = conn.first->second;
 
     static tcp::resolver resolver(_io_service);
 
@@ -61,19 +52,17 @@ void connection_layer<Socket>::_connect(const tcp::resolver::query &query)
     });
 }
 
-template<typename Socket>
-void connection_layer<Socket>::_close()
+void connection_layer::_close()
 {
 
 }
 
-template<typename Socket>
-void connection_layer<Socket>::_close(int id)
+void connection_layer::_close(int id)
 {
     if (id == -1) return;
-    Socket &socket = _connections.find(id)->second;
+    tcp::socket &socket = _connections.find(id)->second;
     if (socket.is_open()) {
-        socket.shutdown(Socket::shutdown_send);
+        socket.shutdown(tcp::socket::shutdown_send);
         socket.close();
     }
     _connections.erase(id);
@@ -81,11 +70,9 @@ void connection_layer<Socket>::_close(int id)
     _queries.erase(id);
 }
 
-
-template<typename Socket>
-void connection_layer<Socket>::receive(int id)
+void connection_layer::receive(int id)
 {
-    Socket &socket = _connections.find(id)->second;
+    tcp::socket &socket = _connections.find(id)->second;
     if (!socket.is_open()) return;
 
     auto size_arr = new unsigned char[4];
@@ -131,8 +118,7 @@ void connection_layer<Socket>::receive(int id)
     });
 }
 
-template<typename Socket>
-void connection_layer<Socket>::send()
+void connection_layer::send()
 {
     std::lock_guard<std::mutex> lock_guard(_mutex);
     if (_queue.empty()) return;
@@ -142,7 +128,7 @@ void connection_layer<Socket>::send()
     auto conn = _connections.find(std::get<0>(data));
     if (conn == _connections.end()) return;
 
-    Socket &socket = conn->second;
+    tcp::socket &socket = conn->second;
     if (!socket.is_open()) return;
 
     auto size = new unsigned char[4];
@@ -180,14 +166,12 @@ void connection_layer<Socket>::send()
     });
 }
 
-template<typename Socket>
-void connection_layer<Socket>::processIn(packet &&data)
+void connection_layer::processIn(packet &&data)
 {
     if (_above) _above->processIn(std::move(data));
 }
 
-template<typename Socket>
-void connection_layer<Socket>::processOut(packet &&data)
+void connection_layer::processOut(packet &&data)
 {
     std::lock_guard<std::mutex> lock_guard(_mutex);
     bool empty_queue = _queue.empty();
@@ -199,7 +183,6 @@ void connection_layer<Socket>::processOut(packet &&data)
         _queue.emplace_back(std::make_tuple(data.id, data.seriallize(), data.size()));
 
     if (empty_queue)
-        _io_service.post(std::bind(&connection_layer<Socket>::send, this));
+        _io_service.post(std::bind(&connection_layer::send, this));
 }
 
-#endif // CONNECTION_LAYER_CPP

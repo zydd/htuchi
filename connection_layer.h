@@ -11,7 +11,6 @@
 
 using asio::ip::tcp;
 
-template<class Socket = tcp::socket>
 class connection_layer : public abstract_layer
 {
 public:
@@ -33,11 +32,11 @@ public:
 protected:
     asio::io_service &_io_service;
     std::mutex _mutex;
-    std::unordered_map<int, Socket> _connections;
+    std::unordered_map<int, tcp::socket> _connections;
     std::unordered_map<int, tcp::acceptor> _acceptors;
     std::unordered_map<int, tcp::resolver::query> _queries;
     std::deque<std::tuple<int, char *, std::size_t>> _queue;
-    Socket _socket;
+    tcp::socket _socket;
     int _id = 0;
 
     void _connect(const tcp::resolver::query &query);
@@ -48,7 +47,5 @@ protected:
     void receive(int id);
     void send();
 };
-
-#include "connection_layer.cpp"
 
 #endif // CONNECTION_LAYER_H
