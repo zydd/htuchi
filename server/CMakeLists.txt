@@ -1,9 +1,6 @@
 find_package(Qt4 REQUIRED)
 include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR})
 
-qt4_wrap_cpp(Hamatuchi_HDRS_MOC ../client/chatwindow.h)
-qt4_wrap_ui(Hamatuchi_FORMS_HDRS ../client/chatwindow.ui)
-
 add_executable(hamatuchid
                server.cpp
                ../abstract_layer.cpp
@@ -13,10 +10,8 @@ add_executable(hamatuchid
                ../connection_layer.cpp
                ../asio_acceptor.cpp
                ../asio_connection.cpp
-               ../ssl_connection.cpp
-               ../client/chatwindow.cpp
-               ${Hamatuchi_HDRS_MOC} ${Hamatuchi_FORMS_HDRS})
+               ../ssl_connection.cpp)
 
-target_link_libraries(hamatuchid ${QT_QTCORE_LIBRARY} ${QT_QTGUI_LIBRARY} -lssl -lcrypto)
+target_link_libraries(hamatuchid ${QT_QTCORE_LIBRARY} -lssl -lcrypto)
 
 install(TARGETS hamatuchid RUNTIME DESTINATION bin)
