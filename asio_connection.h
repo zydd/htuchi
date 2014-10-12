@@ -22,9 +22,12 @@ public:
     void connect(std::function<void()> callback);
     void receive(std::function<void(const std::size_t &size, char *data)> callback);
     void send(const std::size_t &size, std::unique_ptr<char[]> &&data);
+    void set_disconnect_callback(std::function<void()> callback);
+    inline void close() { if(_socket.is_open()) _socket.close(); }
     inline bool is_open() { return _socket.is_open(); }
 
 private:
+    std::function<void()> disconnect_callback;
     asio::io_service &_io_service;
     tcp::socket _socket;
     std::mutex _mutex;

@@ -23,7 +23,6 @@ void acceptor::accept(std::function<void(connection&&)> callback)
             qDebug() << "acceptor::accept()" << error.message().c_str();
             return;
         }
-        qDebug() << "acceptor::accept()";
         callback({_io_service, std::move(_socket), tcp::resolver::query("","")});
         accept(callback);
     });

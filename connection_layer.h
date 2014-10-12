@@ -22,7 +22,6 @@ public:
 
     void add_acceptor(acceptor &&acc);
     void add_connection(connection &&conn);
-    void connect(connection &&conn);
     void receive(int id, const std::size_t &size, char *data);
 
     virtual void processIn(packet &&data);
@@ -33,8 +32,9 @@ protected:
 
     std::mutex _mutex;
     std::unordered_map<int, connection> _connections;
-    std::unordered_map<int, connection> _pending;
     std::unordered_map<int, acceptor> _acceptors;
+
+    void disconnected(int id);
 };
 
 #endif // CONNECTION_LAYER_H

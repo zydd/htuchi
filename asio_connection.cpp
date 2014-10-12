@@ -18,16 +18,11 @@ connection::connection(connection &&o)
     : _io_service(o._io_service),
       _socket(std::move(o._socket)),
       _query(o._query)
-{
-
-}
+{ }
 
 connection::~connection()
 {
-    if (_socket.is_open()) {
-        _socket.shutdown(tcp::socket::shutdown_send);
-        _socket.close();
-    }
+    close();
 }
 
 void connection::connect(std::function<void()> callback)
@@ -39,6 +34,8 @@ void connection::connect(std::function<void()> callback)
                         {
                             if (error) {
                                 qDebug() << "connection::connect()" << error.message().c_str();
+                                close();
+                                if (disconnect_callback) disconnect_callback();
                                 return;
                             }
                             callback();
@@ -46,7 +43,7 @@ void connection::connect(std::function<void()> callback)
                         });
 }
 
-void connection::receive(std::function<void(const std::size_t &size, char *data)> callback)
+void connection::receive(std::function<void(const std::size_t &, char *)> callback)
 {
     auto size_arr = new unsigned char[4];
     asio::async_read(_socket, asio::buffer(size_arr, 4),
@@ -55,6 +52,8 @@ void connection::receive(std::function<void(const std::size_t &size, char *data)
                      {
                          if (error) {
                              qDebug() << "connection::receive()" << error.message().c_str();
+                             close();
+                             if (disconnect_callback) disconnect_callback();
                              return;
                          }
 
@@ -75,6 +74,8 @@ void connection::receive(std::function<void(const std::size_t &size, char *data)
                                           {
                                               if (error) {
                                                   qDebug() << "connection::receive()" << error.message().c_str();
+                                                  close();
+                                                  if (disconnect_callback) disconnect_callback();
                                                   return;
                                               }
                                               qDebug() << "connection::receive()" << length << "bytes";
@@ -116,7 +117,9 @@ void connection::write_next()
                       {
                           delete[] size_arr;
                           if (error) {
-                              qDebug() << error.message().c_str();
+                              qDebug() << "connection::write_next()" << error.message().c_str();
+                              close();
+                              if (disconnect_callback) disconnect_callback();
                               return;
                           }
 
@@ -128,7 +131,9 @@ void connection::write_next()
                                                    const std::size_t &length)
                                             {
                                                 if (error) {
-                                                    qDebug() << error.message().c_str();
+                                                    qDebug() << "connection::write_next()" << error.message().c_str();
+                                                    close();
+                                                    if (disconnect_callback) disconnect_callback();
                                                     return;
                                                 }
                                                 qDebug() << "connection::write()" << length << "bytes";
@@ -138,5 +143,10 @@ void connection::write_next()
                                                 write_next();
                                             });
                       });
+}
+
+void connection::set_disconnect_callback(std::function<void()> callback)
+{
+    disconnect_callback = callback;
 }
 

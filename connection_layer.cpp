@@ -8,6 +8,7 @@ connection_layer::~connection_layer()
 
 void connection_layer::add_acceptor(acceptor &&acc)
 {
+    std::lock_guard<std::mutex> lock_guard(_mutex);
     int id = _id++;
     auto empl = _acceptors.emplace(id, std::move(acc));
     if (empl.second) {
@@ -19,29 +20,23 @@ void connection_layer::add_acceptor(acceptor &&acc)
 
 void connection_layer::add_connection(connection &&conn)
 {
+    std::lock_guard<std::mutex> lock_guard(_mutex);
     int id = _id++;
-    qDebug() << "add_connection id" << id;
+    qDebug() << "add_connection() id:" << id;
     auto empl = _connections.emplace(id, std::move(conn));
 
     if (empl.second) {
+        using std::placeholders::_1;
+        using std::placeholders::_2;
         connection &connection = empl.first->second;
-        using std::placeholders::_1;
-        using std::placeholders::_2;
-        connection.receive(std::bind(&connection_layer::receive, this, id, _1, _2));
-    }
-}
-
-void connection_layer::connect(connection &&conn)
-{
-    int id = _id++;
-    auto empl = _connections.emplace(id, std::move(conn));
-
-    if (empl.second) {
-        auto itr = empl.first;
-        connection &connection = itr->second;
-        using std::placeholders::_1;
-        using std::placeholders::_2;
-        connection.connect([this, id, &connection](){connection.receive(std::bind(&connection_layer::receive, this, id, _1, _2));});
+        connection.set_disconnect_callback(std::bind(&connection_layer::disconnected, this, id));
+        if (connection.is_open())
+            connection.receive(std::bind(&connection_layer::receive, this, id, _1, _2));
+        else
+            connection.connect([this, id, &connection]() {
+                std::lock_guard<std::mutex> lock_guard(_mutex);
+                connection.receive(std::bind(&connection_layer::receive, this, id, _1, _2));
+            });
     }
 }
 
@@ -52,6 +47,12 @@ void connection_layer::receive(int id, const std::size_t &size, char *data)
     });
 }
 
+void connection_layer::disconnected(int id)
+{
+    auto conn = _connections.find(id);
+    if (conn != _connections.end()) // TODO: try reconnect
+        _connections.erase(conn);
+}
 
 void connection_layer::processIn(packet &&data)
 {
