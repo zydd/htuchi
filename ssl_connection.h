@@ -1,8 +1,8 @@
 #ifndef SSL_CONNECTION_H
 #define SSL_CONNECTION_H
 
-// #include <unordered_map>
-// #include <deque>
+#include <unordered_map>
+#include <deque>
 
 #include <asio.hpp>
 #include <asio/ssl.hpp>
@@ -22,7 +22,12 @@ public:
 
 protected:
     asio::io_service &_io_service;
-    ssl_socket _socket;
+    asio::ssl::context &_context;
+    ssl_socket *_socket;
+    std::unordered_map<int, ssl_socket *> _connections;
+    std::unordered_map<int, tcp::acceptor> _acceptors;
+    std::unordered_map<int, tcp::resolver::query> _queries;
+    std::deque<std::tuple<int, char *, std::size_t>> _queue;
 };
 
 #endif // SSL_CONNECTION_H

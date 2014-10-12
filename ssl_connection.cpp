@@ -3,7 +3,7 @@
 ssl_connection::ssl_connection(asio::io_service &io_service,
                                asio::ssl::context &context)
     : _io_service(io_service),
-      _socket(io_service, context)
+      _context(context)
 {
 
 }

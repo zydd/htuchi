@@ -14,15 +14,14 @@ packet::packet(const QByteArray &data)
     : packet(data.begin(), data.end())
 { }
 
-packet::packet(std::unique_ptr<char[]> data, const std::size_t &size)
+packet::packet(const std::size_t &size, std::unique_ptr<char[]> data)
 {
     _data.emplace_back(std::move(data), size);
 }
 
-
-packet::packet(const char *data, const std::size_t &size)
-    : packet(data, data + size)
-{ }
+// packet::packet(const char *data, const std::size_t &size)
+//     : packet(data, data + size)
+// { }
 
 template<typename Itr>
 packet::packet(Itr begin, Itr end)
@@ -32,7 +31,6 @@ packet::packet(Itr begin, Itr end)
     _data.emplace_back(std::move(std::unique_ptr<char[]>(data)), size);
     std::copy(begin, end, data);
 }
-
 
 packet::~packet()
 { }

@@ -11,6 +11,8 @@ add_executable(hamatuchid
                ../reflector_layer.cpp
                ../packet.cpp
                ../connection_layer.cpp
+               ../asio_acceptor.cpp
+               ../asio_connection.cpp
                ../ssl_connection.cpp
                ../client/chatwindow.cpp
                ${Hamatuchi_HDRS_MOC} ${Hamatuchi_FORMS_HDRS})

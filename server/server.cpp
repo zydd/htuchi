@@ -16,8 +16,10 @@ int main(int argc, char **argv)
     asio::io_service io_service;
     std::thread thread([&io_service](){default_event_loop.run();});
 
-    connection_layer conn(io_service);
-    conn.listen({tcp::v4(), 4000});
+    connection_layer conn;
+    io_service.post([&conn, &io_service](){
+        conn.add_acceptor(acceptor(io_service, tcp::endpoint(tcp::v4(), 4000)));
+    });
     reflector_layer mirror;
     conn.insertAbove(&mirror);
 

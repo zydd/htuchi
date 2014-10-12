@@ -33,8 +33,10 @@ int main(int argc, char *argv[])
     std::thread thread([&io_service](){io_service.run();});
     std::thread thread2([](){default_event_loop.run();});
 
-    connection_layer conn(io_service);
-    conn.connect({"localhost", "4000"});
+    connection_layer conn;
+    io_service.post([&conn, &io_service](){
+        conn.connect({io_service, {"localhost", "4000"}});
+    });
     ChatWindow w;
 
     conn.insertAbove(&w);
@@ -43,7 +45,7 @@ int main(int argc, char *argv[])
     w.show();
     a.exec();
 
-    conn.close();
+//     conn.close();
     io_service.stop();
     default_event_loop.stop();
     thread.join();

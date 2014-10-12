@@ -15,11 +15,13 @@ public:
     packet();
     packet(const std::string &str);
     packet(const QVariant &data);
-    packet(const char *data, const std::size_t &size);
-    packet(std::unique_ptr<char[]> data, const std::size_t &size);
-    template<typename Itr>
-    packet(Itr begin, Itr end);
+//     packet(const std::size_t &size, const char *data);
+    packet(const std::size_t &size, std::unique_ptr<char[]> data);
+    template<typename Itr> packet(Itr begin, Itr end);
     ~packet();
+
+    packet(const packet &) = delete;
+    packet &operator= (const packet &) = delete;
 
     char *seriallize() const;
     inline std::size_t size() const {
