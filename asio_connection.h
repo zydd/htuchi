@@ -7,6 +7,8 @@
 #include <QDebug>
 #include <asio.hpp>
 
+#include "packet.h"
+
 using asio::ip::tcp;
 
 class connection
@@ -20,19 +22,24 @@ public:
     ~connection();
 
     void connect(std::function<void()> callback);
-    void receive(std::function<void(const std::size_t &size, char *data)> callback);
-    void send(const std::size_t &size, std::unique_ptr<char[]> &&data);
+    void receive(std::function<void(std::vector<char> &&data)> callback);
+    void send(packet &&data);
     void set_disconnect_callback(std::function<void()> callback);
     inline void close() { if(_socket.is_open()) _socket.close(); }
     inline bool is_open() { return _socket.is_open(); }
 
 private:
+    static const std::size_t _buffer_size = 65536 * 2;
+
     std::function<void()> disconnect_callback;
     asio::io_service &_io_service;
     tcp::socket _socket;
     std::mutex _mutex;
     tcp::resolver::query _query;
-    std::deque<std::pair<std::size_t, std::unique_ptr<char[]>>> _queue;
+    std::deque<packet> _queue;
+    std::vector<char> _buffer;
+    unsigned char _size_buffer_in[4];
+    unsigned char _size_buffer_out[4];
 
     void write_next();
 };

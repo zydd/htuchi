@@ -7,35 +7,39 @@
 #include <QVariant>
 #include <QDebug>
 
-class packet
+class packet : public std::vector<char>
 {
 public:
+    using std::vector<char>::iterator;
+    using std::vector<char>::const_iterator;
+    using std::vector<char>::begin;
+    using std::vector<char>::data;
+    using std::vector<char>::end;
+    using std::vector<char>::size;
+    using std::vector<char>::operator[];
+
     int id = -1;
 
-    packet();
-    packet(const std::string &str);
-    packet(const QVariant &data);
-//     packet(const std::size_t &size, const char *data);
-    packet(const std::size_t &size, std::unique_ptr<char[]> data);
-    template<typename Itr> packet(Itr begin, Itr end);
-    ~packet();
+    inline packet() { }
+    packet(const std::vector<char> &o);
+    packet(std::vector<char> &&o);
+    inline packet(const std::string &str) { push(str); }
+    inline packet(const QVariant &data) { push(data); }
 
-    packet(const packet &) = delete;
-    packet &operator= (const packet &) = delete;
+    template<typename Itr>
+    packet(Itr begin, Itr end) { insert(this->end(), begin, end); }
 
-    char *seriallize() const;
-    inline std::size_t size() const {
-        std::size_t size = 0;
-        for (auto itr = _data.begin(), end = _data.end(); itr != end; ++itr)
-            size += itr->second;
-        return size;
-    }
+// Move capture in lambda needed
+//     packet(const packet &) = delete;
+//     packet &operator= (const packet &) = delete;
 
-private:
-    std::vector<std::pair<std::unique_ptr<char[]>, std::size_t>> _data;
+    void push(const QVariant &data);
 
-    packet(const QByteArray &data);
-    static QByteArray toByteArray(const QVariant &data);
+    inline void push(const std::string &str) { insert(end(), str.begin(), str.end()); }
+
+    template<typename Itr>
+    void push(Itr begin, Itr end) { insert(this->end(), begin, end); }
+
 };
 
 #endif // PACKET_H

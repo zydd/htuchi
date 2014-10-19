@@ -5,19 +5,22 @@ connection::connection(asio::io_service &io_service,
                        const tcp::resolver::query &query)
     : _io_service(io_service),
       _socket(std::move(socket)),
-      _query(query)
+      _query(query),
+      _buffer(_buffer_size)
 { }
 
 connection::connection(asio::io_service &io_service, const tcp::resolver::query &query)
     : _io_service(io_service),
       _socket(io_service),
-      _query(query)
+      _query(query),
+      _buffer(_buffer_size)
 { }
 
 connection::connection(connection &&o)
     : _io_service(o._io_service),
       _socket(std::move(o._socket)),
-      _query(o._query)
+      _query(o._query),
+      _buffer(_buffer_size)
 { }
 
 connection::~connection()
@@ -43,12 +46,11 @@ void connection::connect(std::function<void()> callback)
                         });
 }
 
-void connection::receive(std::function<void(const std::size_t &, char *)> callback)
+void connection::receive(std::function<void(std::vector<char> &&data)> callback)
 {
-    auto size_arr = new unsigned char[4];
-    asio::async_read(_socket, asio::buffer(size_arr, 4),
-                     [this, callback, size_arr](const asio::error_code &error,
-                                                const std::size_t &length)
+    asio::async_read(_socket, asio::buffer(_size_buffer_in, 4),
+                     [this, callback](const asio::error_code &error,
+                                      const std::size_t &length)
                      {
                          if (error) {
                              qDebug() << "connection::receive()" << error.message().c_str();
@@ -57,20 +59,21 @@ void connection::receive(std::function<void(const std::size_t &, char *)> callba
                              return;
                          }
 
-                         std::size_t size = size_arr[0];
-                         size += size_arr[1] << 8;
-                         size += size_arr[2] << 16;
-                         size += size_arr[3] << 24;
-                         delete[] size_arr;
+                         std::size_t size = _size_buffer_in[0];
+                         size += _size_buffer_in[1] << 8;
+                         size += _size_buffer_in[2] << 16;
+                         size += _size_buffer_in[3] << 24;
 
-                         if (size <= 0 || size > 1024 * 1024) {
+                         if (size > _buffer_size) {
+                            qDebug() << "connection::receive() invalid size:" << size;
+                             close();
+                             if (disconnect_callback) disconnect_callback();
                              return;
                          }
 
-                         auto message = new char[size];
-                         asio::async_read(_socket, asio::buffer(message, size),
-                                          [this, callback, message](const asio::error_code &error,
-                                                                    const std::size_t &length)
+                         asio::async_read(_socket, asio::buffer(_buffer, size),
+                                          [this, callback](const asio::error_code &error,
+                                                           const std::size_t &length)
                                           {
                                               if (error) {
                                                   qDebug() << "connection::receive()" << error.message().c_str();
@@ -79,22 +82,22 @@ void connection::receive(std::function<void(const std::size_t &, char *)> callba
                                                   return;
                                               }
                                               qDebug() << "connection::receive()" << length << "bytes";
-                                              callback(length, message);
+                                              std::vector<char> data(length);
+                                              std::copy_n(_buffer.begin(), length, data.begin());
+                                              callback(std::move(data));
                                               receive(callback);
                                           });
                      });
 }
 
-void connection::send(const std::size_t &size, std::unique_ptr<char[]> &&data)
+void connection::send(packet &&data)
 {
-    _mutex.lock();
+    std::lock_guard<std::mutex> lock_guard(_mutex);
 
     bool empty_queue = _queue.empty();
-    _queue.emplace_back(size, std::move(data));
-
-    _mutex.unlock();
-
-    if (empty_queue) write_next();
+    _queue.emplace_back(std::move(data));
+    if (empty_queue)
+        _io_service.post(std::bind(&connection::write_next, this));
 }
 
 void connection::write_next()
@@ -103,19 +106,19 @@ void connection::write_next()
     if (!_socket.is_open()) return;
     if (_queue.empty()) return;
 
-    auto &data = _queue.front();
+    auto size = _queue.front().size();
 
-    auto size_arr = new unsigned char[4];
-    size_arr[0] = data.first & 0xFF;
-    size_arr[1] = (data.first >> 8) & 0xFF;
-    size_arr[2] = (data.first >> 16) & 0xFF;
-    size_arr[3] = (data.first >> 24) & 0xFF;
+    _size_buffer_out[0] = size & 0xFF;
+    _size_buffer_out[1] = (size >> 8) & 0xFF;
+    _size_buffer_out[2] = (size >> 16) & 0xFF;
+    _size_buffer_out[3] = (size >> 24) & 0xFF;
 
-    asio::async_write(_socket, asio::buffer(size_arr, 4),
-                      [this, size_arr](const asio::error_code &error,
-                                       const std::size_t &/*length*/)
+    asio::async_write(_socket, asio::buffer(_size_buffer_out, 4),
+                      [this](const asio::error_code &error,
+                             const std::size_t &/*length*/)
                       {
-                          delete[] size_arr;
+                          std::lock_guard<std::mutex> lock_guard(_mutex);
+
                           if (error) {
                               qDebug() << "connection::write_next()" << error.message().c_str();
                               close();
@@ -123,10 +126,9 @@ void connection::write_next()
                               return;
                           }
 
-                          std::lock_guard<std::mutex> lock_guard(_mutex);
                           auto &data = _queue.front();
 
-                          asio::async_write(_socket, asio::buffer(data.second.get(), data.first),
+                          asio::async_write(_socket, asio::buffer(data),
                                             [this](const asio::error_code &error,
                                                    const std::size_t &length)
                                             {
@@ -137,6 +139,7 @@ void connection::write_next()
                                                     return;
                                                 }
                                                 qDebug() << "connection::write()" << length << "bytes";
+
                                                 _mutex.lock();
                                                 _queue.pop_front();
                                                 _mutex.unlock();

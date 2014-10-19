@@ -22,7 +22,7 @@ public:
 
     void add_acceptor(acceptor &&acc);
     void add_connection(connection &&conn);
-    void receive(int id, const std::size_t &size, char *data);
+    void receive(int id, std::vector<char> &&data);
 
     virtual void processIn(packet &&data);
     virtual void processOut(packet &&data);

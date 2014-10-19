@@ -39,7 +39,7 @@ void ChatWindow::read_queue()
 void ChatWindow::processIn(packet &&data)
 {
     std::lock_guard<std::mutex> lock_guard(_mutex);
-    QByteArray array(data.seriallize(), data.size());
+    QByteArray array(data.data(), data.size());
     QDataStream ds(array);
     QVariant var;
     ds >> var;

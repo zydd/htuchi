@@ -11,6 +11,7 @@ set(Hamatuchi_SRCS
     ../packet.cpp
     ../abstract_layer.cpp
     ../connection_layer.cpp
+    ../sodium_secret_layer.cpp
     ../asio_connection.cpp
     ../asio_acceptor.cpp
     ../event_loop.cpp)
@@ -24,6 +25,6 @@ qt4_wrap_ui(Hamatuchi_FORMS_HDRS ${Hamatuchi_FORMS})
 qt4_add_resources(Hamatuchi_RES_RCC ${Hamatuchi_RES})
 
 add_executable(hamatuchi ${Hamatuchi_SRCS} ${Hamatuchi_HDRS_MOC} ${Hamatuchi_RES_RCC} ${Hamatuchi_FORMS_HDRS})
-target_link_libraries(hamatuchi ${QT_QTCORE_LIBRARY} ${QT_QTGUI_LIBRARY})
+target_link_libraries(hamatuchi ${QT_QTCORE_LIBRARY} ${QT_QTGUI_LIBRARY} -lsodium)
 
 install(TARGETS hamatuchi RUNTIME DESTINATION bin)

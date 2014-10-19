@@ -27,23 +27,24 @@ void connection_layer::add_connection(connection &&conn)
 
     if (empl.second) {
         using std::placeholders::_1;
-        using std::placeholders::_2;
         connection &connection = empl.first->second;
         connection.set_disconnect_callback(std::bind(&connection_layer::disconnected, this, id));
         if (connection.is_open())
-            connection.receive(std::bind(&connection_layer::receive, this, id, _1, _2));
+            connection.receive(std::bind(&connection_layer::receive, this, id, _1));
         else
             connection.connect([this, id, &connection]() {
                 std::lock_guard<std::mutex> lock_guard(_mutex);
-                connection.receive(std::bind(&connection_layer::receive, this, id, _1, _2));
+                connection.receive(std::bind(&connection_layer::receive, this, id, _1));
             });
     }
 }
 
-void connection_layer::receive(int id, const std::size_t &size, char *data)
+void connection_layer::receive(int id, std::vector<char> &&data)
 {
-    default_event_loop.post([this, size, data]() {
-        processIn({size, std::unique_ptr<char[]>(data)});
+    default_event_loop.post([this, id, data]() {
+        packet pack(std::move(data));
+        pack.id = id;
+        processIn(std::move(pack));
     });
 }
 
@@ -65,11 +66,13 @@ void connection_layer::processOut(packet &&data)
 
     if (data.id == -1) {
         for (auto itr = _connections.begin(), end = _connections.end(); itr != end; ++itr) {
-            itr->second.send(data.size(), std::unique_ptr<char[]>(data.seriallize()));
+            packet pack(data);
+            itr->second.send(std::move(pack));
         }
     } else {
         auto conn = _connections.find(data.id);
-        if (conn != _connections.end())
-            conn->second.send(data.size(), std::unique_ptr<char[]>(data.seriallize()));
+        if (conn != _connections.end()) {
+            conn->second.send(std::move(data));
+        }
     }
 }
