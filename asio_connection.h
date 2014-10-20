@@ -22,7 +22,7 @@ public:
     ~connection();
 
     void connect(std::function<void()> callback);
-    void receive(std::function<void(std::vector<char> &&data)> callback);
+    void receive(std::function<void(std::vector<byte> &&data)> callback);
     void send(packet &&data);
     void set_disconnect_callback(std::function<void()> callback);
     inline void close() { if(_socket.is_open()) _socket.close(); }

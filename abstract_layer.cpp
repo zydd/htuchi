@@ -13,30 +13,18 @@ abstract_layer::~abstract_layer()
     }
 }
 
-void abstract_layer::insertAbove(abstract_layer *above)
+void abstract_layer::insertAbove(abstract_layer *layer)
 {
-    if (above->_below || (above->_above && _above))
-        throw "abstract_layer() trying to insert element that is already on a list";
+    if (layer->_below || (layer->_above && _above))
+        throw std::runtime_error("abstract_layer() already inserted");
 
     if (_above) {
-        _above->_below = above;
-        above->_above = _above;
+        _above->_below = layer;
+        layer->_above = _above;
     }
 
-    above->_below = this;
-    _above = above;
+    layer->_below = this;
+    _above = layer;
+    layer->inserted();
 }
 
-void abstract_layer::insertBelow(abstract_layer *below)
-{
-    if (below->_above || (below->_below && _below))
-        throw "abstract_layer() trying to insert element that is already on a list";
-
-    if (_below) {
-        _below->_above = below;
-        below->_below = _below;
-    }
-
-    below->_above = this;
-    _below = below;
-}

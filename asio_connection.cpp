@@ -46,7 +46,7 @@ void connection::connect(std::function<void()> callback)
                         });
 }
 
-void connection::receive(std::function<void(std::vector<char> &&data)> callback)
+void connection::receive(std::function<void(std::vector<byte> &&data)> callback)
 {
     asio::async_read(_socket, asio::buffer(_size_buffer_in, 4),
                      [this, callback](const asio::error_code &error,
@@ -82,7 +82,7 @@ void connection::receive(std::function<void(std::vector<char> &&data)> callback)
                                                   return;
                                               }
                                               qDebug() << "connection::receive()" << length << "bytes";
-                                              std::vector<char> data(length);
+                                              std::vector<byte> data(length);
                                               std::copy_n(_buffer.begin(), length, data.begin());
                                               callback(std::move(data));
                                               receive(callback);

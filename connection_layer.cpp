@@ -39,7 +39,7 @@ void connection_layer::add_connection(connection &&conn)
     }
 }
 
-void connection_layer::receive(int id, std::vector<char> &&data)
+void connection_layer::receive(int id, std::vector<byte> &&data)
 {
     default_event_loop.post([this, id, data]() {
         packet pack(std::move(data));

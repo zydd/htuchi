@@ -27,8 +27,8 @@ void sodium_secret_layer::processIn(packet &&data)
 
     std::size_t clen = data.size();
     std::size_t mlen = clen - crypto_secretbox_MACBYTES;
-    unsigned char *ciphertext = (unsigned char *) data.data();
-    std::vector<char> message(mlen);
+    unsigned char *ciphertext = data.data();
+    std::vector<byte> message(mlen);
 
     if (!sync_in) {
         if (clen < crypto_secretbox_NONCEBYTES)
@@ -38,7 +38,7 @@ void sodium_secret_layer::processIn(packet &&data)
         sync_in = true;
     }
 
-    if (crypto_secretbox_open_easy((unsigned char *) message.data(), ciphertext, clen, nonce_in, key) < 0) {
+    if (crypto_secretbox_open_easy(message.data(), ciphertext, clen, nonce_in, key) < 0) {
         qDebug() << "decryption failed";
         return;
     }
@@ -53,10 +53,10 @@ void sodium_secret_layer::processOut(packet &&data)
 
     std::size_t mlen = data.size();
     std::size_t clen = crypto_secretbox_MACBYTES + mlen;
-    unsigned char *message = (unsigned char *) data.data();
-    std::vector<char> ciphertext(clen);
+    unsigned char *message = data.data();
+    std::vector<byte> ciphertext(clen);
 
-    if (crypto_secretbox_easy((unsigned char *) ciphertext.data(), message, mlen, nonce_out, key) < 0)
+    if (crypto_secretbox_easy(ciphertext.data(), message, mlen, nonce_out, key) < 0)
         throw std::runtime_error("crypto_secretbox_easy() error");
 
     packet pack(std::move(ciphertext));
