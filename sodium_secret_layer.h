@@ -14,12 +14,15 @@ public:
     virtual void processOut(packet &&data);
 
 private:
-    bool sync_in = false;
-    bool sync_out = false;
+    enum Flags {
+        Encrypted = 1 << 0,
+        Nonce     = 1 << 1
+    };
     unsigned char *key;
     unsigned char nonce_in[crypto_secretbox_NONCEBYTES];
     unsigned char nonce_out[crypto_secretbox_NONCEBYTES];
 
+    virtual void inserted();
     void increment(unsigned char nonce[crypto_secretbox_NONCEBYTES]);
 };
 

@@ -34,11 +34,6 @@ int main(int argc, char *argv[])
 
     QApplication a(argc, argv);
 
-    std::string pass = QInputDialog::getText(nullptr, "Password", "Password", QLineEdit::Password).toStdString();
-    if (pass.empty()) return 0;
-    unsigned char key[crypto_secretbox_KEYBYTES];
-    crypto_hash_sha256(key, (unsigned char *)pass.c_str(), pass.size());
-
     asio::io_service io_service;
     asio::io_service::work work(io_service);
     std::thread thread([&io_service](){io_service.run();});
@@ -47,10 +42,16 @@ int main(int argc, char *argv[])
     connection_layer conn;
     conn.add_connection({io_service, {"localhost", "48768"}});
 
-    sodium_secret_layer enc(key);
-    conn.insertAbove(&enc);
+    QString pass = QInputDialog::getText(nullptr, "Password", "Password", QLineEdit::Password);
+    packet p(pass);
+    if (pass.isEmpty()) return 0;
+    unsigned char key[crypto_secretbox_KEYBYTES];
+    crypto_hash_sha256(key, p.data(), p.size());
 
+    sodium_secret_layer enc(key);
     ChatWindow w;
+
+    conn.insertAbove(&enc);
     enc.insertAbove(&w);
 
     w.setWindowTitle("Client");
