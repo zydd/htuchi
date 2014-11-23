@@ -20,8 +20,8 @@ public:
     connection_layer();
     ~connection_layer();
 
-    void add_acceptor(acceptor &&acc);
-    void add_connection(connection &&conn);
+    void add_acceptor(asio_acceptor &&acc);
+    void add_connection(asio_connection &&conn);
     void receive(int id, std::vector<byte> &&data);
 
     virtual void processIn(packet &&data);
@@ -31,8 +31,8 @@ protected:
     int _id = 0;
 
     std::mutex _mutex;
-    std::unordered_map<int, connection> _connections;
-    std::unordered_map<int, acceptor> _acceptors;
+    std::unordered_map<int, asio_connection> _connections;
+    std::unordered_map<int, asio_acceptor> _acceptors;
 
     void disconnected(int id);
 };

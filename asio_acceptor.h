@@ -9,14 +9,14 @@
 
 using asio::ip::tcp;
 
-class acceptor
+class asio_acceptor
 {
 public:
-    acceptor(asio::io_service &io_service, const tcp::endpoint &endpoint);
-    acceptor(acceptor &&o);
-    ~acceptor();
+    asio_acceptor(asio::io_service &io_service, const tcp::endpoint &endpoint);
+    asio_acceptor(asio_acceptor &&o);
+    ~asio_acceptor();
 
-    void accept(std::function<void(connection&&)> callback);
+    void accept(std::function<void(asio_connection&&)> callback);
 
 private:
     asio::io_service &_io_service;

@@ -6,19 +6,19 @@ connection_layer::connection_layer()
 connection_layer::~connection_layer()
 { }
 
-void connection_layer::add_acceptor(acceptor &&acc)
+void connection_layer::add_acceptor(asio_acceptor &&acc)
 {
     std::lock_guard<std::mutex> lock_guard(_mutex);
     int id = _id++;
     auto empl = _acceptors.emplace(id, std::move(acc));
     if (empl.second) {
-        acceptor &acceptor = empl.first->second;
+        asio_acceptor &acceptor = empl.first->second;
         using std::placeholders::_1;
         acceptor.accept(std::bind(&connection_layer::add_connection, this, _1));
     }
 }
 
-void connection_layer::add_connection(connection &&conn)
+void connection_layer::add_connection(asio_connection &&conn)
 {
     std::lock_guard<std::mutex> lock_guard(_mutex);
     int id = _id++;
@@ -27,7 +27,7 @@ void connection_layer::add_connection(connection &&conn)
 
     if (empl.second) {
         using std::placeholders::_1;
-        connection &connection = empl.first->second;
+        asio_connection &connection = empl.first->second;
         connection.set_disconnect_callback(std::bind(&connection_layer::disconnected, this, id));
         if (connection.is_open())
             connection.receive(std::bind(&connection_layer::receive, this, id, _1));

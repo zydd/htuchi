@@ -13,7 +13,7 @@ int main(int argc, char **argv)
     std::thread thread([&io_service](){default_event_loop.run();});
 
     connection_layer conn;
-    conn.add_acceptor(acceptor(io_service, tcp::endpoint(tcp::v4(), 48768)));
+    conn.add_acceptor(asio_acceptor(io_service, tcp::endpoint(tcp::v4(), 48768)));
 
     reflector_layer mirror;
     conn.insertAbove(&mirror);

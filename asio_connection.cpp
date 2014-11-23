@@ -1,6 +1,6 @@
 #include "asio_connection.h"
 
-connection::connection(asio::io_service &io_service,
+asio_connection::asio_connection(asio::io_service &io_service,
                        tcp::socket &&socket,
                        const tcp::resolver::query &query)
     : _io_service(io_service),
@@ -9,26 +9,26 @@ connection::connection(asio::io_service &io_service,
       _buffer(_buffer_size)
 { }
 
-connection::connection(asio::io_service &io_service, const tcp::resolver::query &query)
+asio_connection::asio_connection(asio::io_service &io_service, const tcp::resolver::query &query)
     : _io_service(io_service),
       _socket(io_service),
       _query(query),
       _buffer(_buffer_size)
 { }
 
-connection::connection(connection &&o)
+asio_connection::asio_connection(asio_connection &&o)
     : _io_service(o._io_service),
       _socket(std::move(o._socket)),
       _query(o._query),
       _buffer(_buffer_size)
 { }
 
-connection::~connection()
+asio_connection::~asio_connection()
 {
     close();
 }
 
-void connection::connect(std::function<void()> callback)
+void asio_connection::connect(std::function<void()> callback)
 {
     tcp::resolver resolver(_io_service);
     asio::async_connect(_socket, resolver.resolve(_query),
@@ -46,7 +46,7 @@ void connection::connect(std::function<void()> callback)
                         });
 }
 
-void connection::receive(std::function<void(std::vector<byte> &&data)> callback)
+void asio_connection::receive(std::function<void(std::vector<byte> &&data)> callback)
 {
     asio::async_read(_socket, asio::buffer(_size_buffer_in, 4),
                      [this, callback](const asio::error_code &error,
@@ -90,17 +90,17 @@ void connection::receive(std::function<void(std::vector<byte> &&data)> callback)
                      });
 }
 
-void connection::send(packet &&data)
+void asio_connection::send(packet &&data)
 {
     std::lock_guard<std::mutex> lock_guard(_mutex);
 
     bool empty_queue = _queue.empty();
     _queue.emplace_back(std::move(data));
     if (empty_queue)
-        _io_service.post(std::bind(&connection::write_next, this));
+        _io_service.post(std::bind(&asio_connection::write_next, this));
 }
 
-void connection::write_next()
+void asio_connection::write_next()
 {
     std::lock_guard<std::mutex> lock_guard(_mutex);
     if (!_socket.is_open()) return;
@@ -148,7 +148,7 @@ void connection::write_next()
                       });
 }
 
-void connection::set_disconnect_callback(std::function<void()> callback)
+void asio_connection::set_disconnect_callback(std::function<void()> callback)
 {
     disconnect_callback = callback;
 }

@@ -11,15 +11,15 @@
 
 using asio::ip::tcp;
 
-class connection
+class asio_connection
 {
 public:
-    connection(asio::io_service &io_service,
+    asio_connection(asio::io_service &io_service,
                tcp::socket &&socket,
                const tcp::resolver::query &query);
-    connection(asio::io_service &io_service, const tcp::resolver::query &query);
-    connection(connection &&o);
-    ~connection();
+    asio_connection(asio::io_service &io_service, const tcp::resolver::query &query);
+    asio_connection(asio_connection &&o);
+    ~asio_connection();
 
     void connect(std::function<void()> callback);
     void receive(std::function<void(std::vector<byte> &&data)> callback);
