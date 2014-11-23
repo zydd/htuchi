@@ -12,11 +12,13 @@ int main(int argc, char **argv)
     asio::io_service io_service;
     std::thread thread([&io_service](){default_event_loop.run();});
 
-    connection_layer conn;
-    conn.add_acceptor(asio_acceptor(io_service, tcp::endpoint(tcp::v4(), 48768)));
+    connection_layer conn([](abstract_layer &c){
+        auto ref = new reflector_layer;
+        ref->insertAbove(&c);
+        c.insertAbove(ref);
+    });
 
-    reflector_layer mirror;
-    conn.insertAbove(&mirror);
+    conn.add_acceptor(asio_acceptor(io_service, tcp::endpoint(tcp::v4(), 48768)));
 
     io_service.run();
     default_event_loop.stop();

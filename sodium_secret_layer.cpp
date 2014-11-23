@@ -22,7 +22,6 @@ void sodium_secret_layer::increment(unsigned char nonce[crypto_secretbox_NONCEBY
 
 void sodium_secret_layer::processIn(packet &&data)
 {
-    qDebug() << "decryption:"<<data.size()<<":"<<data[data.size() - 1];
     if (!_above) return;
 
     std::size_t clen = data.size();
@@ -78,6 +77,7 @@ void sodium_secret_layer::processOut(packet &&data)
 
 void sodium_secret_layer::inserted()
 {
+    if (!_below) return;
     packet pack(nonce_out, nonce_out + crypto_secretbox_NONCEBYTES);
     pack.push_back(Nonce);
     _below->processOut(std::move(pack));

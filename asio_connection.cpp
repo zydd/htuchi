@@ -33,23 +33,22 @@ void asio_connection::connect(std::function<void()> callback)
     tcp::resolver resolver(_io_service);
     asio::async_connect(_socket, resolver.resolve(_query),
                         [this, callback](const asio::error_code &error,
-                                         const tcp::resolver::iterator &/*itr*/)
+                                         const tcp::resolver::iterator &itr)
                         {
+                            qDebug() << "connection::connect()" << error.message().c_str();
                             if (error) {
-                                qDebug() << "connection::connect()" << error.message().c_str();
                                 close();
                                 if (disconnect_callback) disconnect_callback();
                                 return;
                             }
                             callback();
-                            write_next();
                         });
 }
 
-void asio_connection::receive(std::function<void(std::vector<byte> &&data)> callback)
+void asio_connection::receive()
 {
     asio::async_read(_socket, asio::buffer(_size_buffer_in, 4),
-                     [this, callback](const asio::error_code &error,
+                     [this](const asio::error_code &error,
                                       const std::size_t &length)
                      {
                          if (error) {
@@ -65,14 +64,14 @@ void asio_connection::receive(std::function<void(std::vector<byte> &&data)> call
                          size += _size_buffer_in[3] << 24;
 
                          if (size > _buffer_size) {
-                            qDebug() << "connection::receive() invalid size:" << size;
+                             qDebug() << "connection::receive() invalid size:" << size;
                              close();
                              if (disconnect_callback) disconnect_callback();
                              return;
                          }
 
                          asio::async_read(_socket, asio::buffer(_buffer, size),
-                                          [this, callback](const asio::error_code &error,
+                                          [this](const asio::error_code &error,
                                                            const std::size_t &length)
                                           {
                                               if (error) {
@@ -84,20 +83,10 @@ void asio_connection::receive(std::function<void(std::vector<byte> &&data)> call
                                               qDebug() << "connection::receive()" << length << "bytes";
                                               std::vector<byte> data(length);
                                               std::copy_n(_buffer.begin(), length, data.begin());
-                                              callback(std::move(data));
-                                              receive(callback);
+                                              default_event_loop.post([this, data]() { processIn(std::move(data)); });
+                                              receive();
                                           });
                      });
-}
-
-void asio_connection::send(packet &&data)
-{
-    std::lock_guard<std::mutex> lock_guard(_mutex);
-
-    bool empty_queue = _queue.empty();
-    _queue.emplace_back(std::move(data));
-    if (empty_queue)
-        _io_service.post(std::bind(&asio_connection::write_next, this));
 }
 
 void asio_connection::write_next()
@@ -105,6 +94,7 @@ void asio_connection::write_next()
     std::lock_guard<std::mutex> lock_guard(_mutex);
     if (!_socket.is_open()) return;
     if (_queue.empty()) return;
+    if (_writing_queue) return;
 
     auto size = _queue.front().size();
 
@@ -113,6 +103,7 @@ void asio_connection::write_next()
     _size_buffer_out[2] = (size >> 16) & 0xFF;
     _size_buffer_out[3] = (size >> 24) & 0xFF;
 
+    _writing_queue = true;
     asio::async_write(_socket, asio::buffer(_size_buffer_out, 4),
                       [this](const asio::error_code &error,
                              const std::size_t &/*length*/)
@@ -132,6 +123,7 @@ void asio_connection::write_next()
                                             [this](const asio::error_code &error,
                                                    const std::size_t &length)
                                             {
+                                                _writing_queue = false;
                                                 if (error) {
                                                     qDebug() << "connection::write_next()" << error.message().c_str();
                                                     close();
@@ -151,5 +143,21 @@ void asio_connection::write_next()
 void asio_connection::set_disconnect_callback(std::function<void()> callback)
 {
     disconnect_callback = callback;
+}
+
+void asio_connection::processIn(packet &&data)
+{
+    if (!_above) return;
+    _above->processIn(std::move(data));
+}
+
+void asio_connection::processOut(packet &&data)
+{
+    _mutex.lock();
+    bool empty_queue = _queue.empty();
+    _queue.emplace_back(std::move(data));
+    _mutex.unlock();
+    if (empty_queue)
+        write_next();
 }
 

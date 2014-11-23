@@ -14,21 +14,19 @@
 
 using asio::ip::tcp;
 
-class connection_layer : public abstract_layer
+class connection_layer
 {
 public:
-    connection_layer();
+    connection_layer(std::function<void(abstract_layer&)> build_stack);
     ~connection_layer();
 
     void add_acceptor(asio_acceptor &&acc);
     void add_connection(asio_connection &&conn);
-    void receive(int id, std::vector<byte> &&data);
-
-    virtual void processIn(packet &&data);
-    virtual void processOut(packet &&data);
+//     void receive(int id, std::vector<byte> &&data);
 
 protected:
     int _id = 0;
+    std::function<void(abstract_layer&)> _build_stack;
 
     std::mutex _mutex;
     std::unordered_map<int, asio_connection> _connections;

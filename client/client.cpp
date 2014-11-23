@@ -39,23 +39,23 @@ int main(int argc, char *argv[])
     std::thread thread([&io_service](){io_service.run();});
     std::thread thread2([](){default_event_loop.run();});
 
-    connection_layer conn;
-    conn.add_connection({io_service, {"localhost", "48768"}});
-
     QString pass = QInputDialog::getText(nullptr, "Password", "Password", QLineEdit::Password);
     packet p(pass);
     if (pass.isEmpty()) return 0;
     unsigned char key[crypto_secretbox_KEYBYTES];
     crypto_hash_sha256(key, p.data(), p.size());
 
-    sodium_secret_layer enc(key);
-    ChatWindow w;
+    auto wnd = new ChatWindow;
+    connection_layer conn([&key, &wnd](abstract_layer &c){
+        auto enc = new sodium_secret_layer(key);
+        c.insertAbove(enc);
 
-    conn.insertAbove(&enc);
-    enc.insertAbove(&w);
+        wnd->setWindowTitle("Client");
+        enc->insertAbove(wnd);
+    });
+    conn.add_connection({io_service, {"localhost", "48768"}});
 
-    w.setWindowTitle("Client");
-    w.show();
+    wnd->show();
     a.exec();
 
     io_service.stop();
