@@ -1,4 +1,5 @@
 #include "asio_connection.h"
+#include "event_loop.h"
 
 asio_connection::asio_connection(asio::io_service &io_service,
                        tcp::socket &&socket,
@@ -83,7 +84,7 @@ void asio_connection::receive()
                                               qDebug() << "connection::receive()" << length << "bytes";
                                               std::vector<byte> data(length);
                                               std::copy_n(_buffer.begin(), length, data.begin());
-                                              default_event_loop.post([this, data]() { processIn(std::move(data)); });
+                                              default_event_loop.post([this, data]() { receive_callback(std::move(data)); });
                                               receive();
                                           });
                      });
@@ -145,13 +146,12 @@ void asio_connection::set_disconnect_callback(std::function<void()> callback)
     disconnect_callback = callback;
 }
 
-void asio_connection::processIn(packet &&data)
+void asio_connection::set_receive_callback(std::function<void(packet &&data)> callback)
 {
-    if (!_above) return;
-    _above->processIn(std::move(data));
+    receive_callback = callback;
 }
 
-void asio_connection::processOut(packet &&data)
+void asio_connection::send(packet &&data)
 {
     _mutex.lock();
     bool empty_queue = _queue.empty();

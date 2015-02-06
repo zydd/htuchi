@@ -12,8 +12,6 @@ using byte = unsigned char;
 class packet : public std::vector<byte>
 {
 public:
-    int id = -1;
-
     inline packet() { }
     packet(const std::vector<byte> &o);
     packet(std::vector<byte> &&o);

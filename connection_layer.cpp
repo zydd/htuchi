@@ -1,7 +1,8 @@
+#include <mutex>
+
 #include "connection_layer.h"
 
-connection_layer::connection_layer(std::function<void(abstract_layer&)> build_stack)
-    : _build_stack(build_stack)
+connection_layer::connection_layer()
 { }
 
 connection_layer::~connection_layer()
@@ -29,14 +30,14 @@ void connection_layer::add_connection(asio_connection &&conn)
     if (empl.second) {
         asio_connection &connection = empl.first->second;
         connection.set_disconnect_callback(std::bind(&connection_layer::disconnected, this, id));
+        using std::placeholders::_1;
+	connection.set_receive_callback(std::bind(&connection_layer::receive, this, id, _1));
         if (connection.is_open()) {
-            _build_stack(connection);
             connection.receive();
             connection.write_next();
         } else {
             connection.connect([this, id, &connection]() {
                 std::lock_guard<std::mutex> lock_guard(_mutex);
-                _build_stack(connection);
                 connection.receive();
                 connection.write_next();
             });
@@ -51,4 +52,9 @@ void connection_layer::disconnected(int id)
         _connections.erase(conn);
 }
 
+void connection_layer::receive(int id, packet &&data)
+{
+//     data.push((unsigned char) (id & 0xFF)); // !!Trunc!!
+    processDown(std::move(data));
+}
 

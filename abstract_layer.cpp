@@ -2,29 +2,37 @@
 #include "abstract_layer.h"
 
 abstract_layer::~abstract_layer()
+{ }
+
+void abstract_layer::setAbove(abstract_layer *layer)
 {
-    if (_above && _below) {
-        _above->_below = _below;
-        _below->_above = _above;
-    } else if (_above) {
-        _above->_below = nullptr;
-    } else if (_below) {
-        _below->_above = nullptr;
-    }
-}
-
-void abstract_layer::insertAbove(abstract_layer *layer)
-{
-    if (layer->_below || (layer->_above && _above))
-        throw std::runtime_error("abstract_layer() already inserted");
-
-    if (_above) {
-        _above->_below = layer;
-        layer->_above = _above;
-    }
-
-    layer->_below = this;
     _above = layer;
     layer->inserted();
 }
 
+void abstract_layer::setBelow(abstract_layer *layer)
+{
+    _below = layer;
+    layer->inserted();
+}
+
+void abstract_layer::removeAbove(abstract_layer* layer)
+{
+    if (_above == layer) _above = nullptr;
+}
+
+void abstract_layer::removeBelow(abstract_layer* layer)
+{
+    if (_below == layer) _below = nullptr;
+}
+
+
+void abstract_layer::processUp(packet &&data)
+{
+    if (_above) _above->processUp(std::move(data));
+}
+
+void abstract_layer::processDown(packet &&data)
+{
+    if (_below) _below->processDown(std::move(data));
+}

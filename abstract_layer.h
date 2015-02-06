@@ -8,10 +8,13 @@ class abstract_layer
 {
 public:
     virtual ~abstract_layer();
-    virtual void processIn(packet &&data) = 0;
-    virtual void processOut(packet &&data) = 0;
+    void setAbove(abstract_layer *layer);
+    void setBelow(abstract_layer *layer);
+    void removeAbove(abstract_layer *layer);
+    void removeBelow(abstract_layer *layer);
+    virtual void processUp(packet &&data);
+    virtual void processDown(packet &&data);
     inline virtual void inserted() { }
-    void insertAbove(abstract_layer *layer);
 
 protected:
     abstract_layer *_above = nullptr;
@@ -19,3 +22,4 @@ protected:
 };
 
 #endif // ABSTRACT_LAYER_H
+

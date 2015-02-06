@@ -9,9 +9,8 @@ add_executable(hamatuchid
                ../packet.cpp
                ../connection_layer.cpp
                ../asio_acceptor.cpp
-               ../asio_connection.cpp
-               ../ssl_connection.cpp)
+               ../asio_connection.cpp)
 
-target_link_libraries(hamatuchid ${QT_QTCORE_LIBRARY} -lssl -lcrypto)
+target_link_libraries(hamatuchid ${QT_QTCORE_LIBRARY} pthread)
 
 install(TARGETS hamatuchid RUNTIME DESTINATION bin)

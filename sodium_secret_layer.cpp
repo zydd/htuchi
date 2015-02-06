@@ -1,4 +1,5 @@
 #include <random>
+#include <stdexcept>
 #include <sodium.h>
 
 #include "sodium_secret_layer.h"
@@ -20,7 +21,7 @@ void sodium_secret_layer::increment(unsigned char nonce[crypto_secretbox_NONCEBY
 }
 
 
-void sodium_secret_layer::processIn(packet &&data)
+void sodium_secret_layer::processUp(packet &&data)
 {
     if (!_above) return;
 
@@ -51,12 +52,12 @@ void sodium_secret_layer::processIn(packet &&data)
             return;
         }
 
-        _above->processIn(std::move(message));
+        _above->processUp(std::move(message));
     } else
-        _above->processIn(std::move(data));
+        _above->processUp(std::move(data));
 }
 
-void sodium_secret_layer::processOut(packet &&data)
+void sodium_secret_layer::processDown(packet &&data)
 {
     if (!_below) return;
 
@@ -70,9 +71,10 @@ void sodium_secret_layer::processOut(packet &&data)
         throw std::runtime_error("crypto_secretbox_easy() error");
 
     packet pack(std::move(ciphertext));
-    pack.push_back(Encrypted);
+    pack.push(nonce_out, nonce_out + crypto_secretbox_NONCEBYTES);
+    pack.push_back(Encrypted | Nonce);
 
-    _below->processOut(std::move(pack));
+    _below->processDown(std::move(pack));
 }
 
 void sodium_secret_layer::inserted()
@@ -80,6 +82,6 @@ void sodium_secret_layer::inserted()
     if (!_below) return;
     packet pack(nonce_out, nonce_out + crypto_secretbox_NONCEBYTES);
     pack.push_back(Nonce);
-    _below->processOut(std::move(pack));
+    _below->processDown(std::move(pack));
 }
 

@@ -21,7 +21,7 @@ void ChatWindow::send()
     if (!ui->messageEdit->text().isEmpty()) {
         QVariant msg(ui->messageEdit->text());
         default_event_loop.post([this, msg](){
-            processOut(msg);
+            processDown(msg);
         });
         ui->messageEdit->clear();
     }
@@ -36,7 +36,7 @@ void ChatWindow::read_queue()
     }
 }
 
-void ChatWindow::processIn(packet &&data)
+void ChatWindow::processUp(packet &&data)
 {
     std::lock_guard<std::mutex> lock_guard(_mutex);
     QByteArray array((char *)data.data(), data.size());
@@ -49,7 +49,3 @@ void ChatWindow::processIn(packet &&data)
     QMetaObject::invokeMethod(this, "read_queue", Qt::QueuedConnection);
 }
 
-void ChatWindow::processOut(packet &&data)
-{
-    if (_below) _below->processOut(std::move(data));
-}

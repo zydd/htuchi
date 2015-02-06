@@ -10,8 +10,8 @@ class sodium_secret_layer : public abstract_layer
 public:
     sodium_secret_layer(unsigned char *key);
     ~sodium_secret_layer();
-    virtual void processIn(packet &&data);
-    virtual void processOut(packet &&data);
+    virtual void processUp(packet &&data);
+    virtual void processDown(packet &&data);
 
 private:
     enum Flags {

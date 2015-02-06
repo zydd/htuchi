@@ -4,20 +4,18 @@
 #include <mutex>
 #include <deque>
 
-#include <QDebug>
 #include <asio.hpp>
 
-#include "abstract_layer.h"
 #include "packet.h"
 
 using asio::ip::tcp;
 
-class asio_connection : public abstract_layer
+class asio_connection
 {
 public:
     asio_connection(asio::io_service &io_service,
-               tcp::socket &&socket,
-               const tcp::resolver::query &query);
+                    tcp::socket &&socket,
+                    const tcp::resolver::query &query);
     asio_connection(asio::io_service &io_service, const tcp::resolver::query &query);
     asio_connection(asio_connection &&o);
     ~asio_connection();
@@ -26,16 +24,17 @@ public:
     void receive();
     void write_next();
     void set_disconnect_callback(std::function<void()> callback);
+    void set_receive_callback(std::function<void(packet &&data)> callback);
     inline void close() { if(_socket.is_open()) _socket.close(); }
     inline bool is_open() { return _socket.is_open(); }
 
-    virtual void processIn(packet &&data);
-    virtual void processOut(packet &&data);
+    virtual void send(packet &&data);
 
 private:
     static const std::size_t _buffer_size = 65536 * 2;
 
     std::function<void()> disconnect_callback;
+    std::function<void(packet &&data)> receive_callback;
     asio::io_service &_io_service;
     tcp::socket _socket;
     std::mutex _mutex;
