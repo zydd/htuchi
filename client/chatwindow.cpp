@@ -1,5 +1,8 @@
 #include <thread>
 
+#define PACKET_USE_QT
+#include "../packet.h"
+
 #include "chatwindow.h"
 #include "ui_chatwindow.h"
 

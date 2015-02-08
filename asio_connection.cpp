@@ -36,7 +36,7 @@ void asio_connection::connect(std::function<void()> callback)
                         [this, callback](const asio::error_code &error,
                                          const tcp::resolver::iterator &itr)
                         {
-                            qDebug() << "connection::connect()" << error.message().c_str();
+//                             qDebug() << "connection::connect()" << error.message().c_str();
                             if (error) {
                                 close();
                                 if (disconnect_callback) disconnect_callback();
@@ -53,7 +53,7 @@ void asio_connection::receive()
                                       const std::size_t &length)
                      {
                          if (error) {
-                             qDebug() << "connection::receive()" << error.message().c_str();
+//                              qDebug() << "connection::receive()" << error.message().c_str();
                              close();
                              if (disconnect_callback) disconnect_callback();
                              return;
@@ -65,7 +65,7 @@ void asio_connection::receive()
                          size += _size_buffer_in[3] << 24;
 
                          if (size > _buffer_size) {
-                             qDebug() << "connection::receive() invalid size:" << size;
+//                              qDebug() << "connection::receive() invalid size:" << size;
                              close();
                              if (disconnect_callback) disconnect_callback();
                              return;
@@ -76,12 +76,12 @@ void asio_connection::receive()
                                                            const std::size_t &length)
                                           {
                                               if (error) {
-                                                  qDebug() << "connection::receive()" << error.message().c_str();
+//                                                   qDebug() << "connection::receive()" << error.message().c_str();
                                                   close();
                                                   if (disconnect_callback) disconnect_callback();
                                                   return;
                                               }
-                                              qDebug() << "connection::receive()" << length << "bytes";
+//                                               qDebug() << "connection::receive()" << length << "bytes";
                                               std::vector<byte> data(length);
                                               std::copy_n(_buffer.begin(), length, data.begin());
                                               default_event_loop.post([this, data]() { receive_callback(std::move(data)); });
@@ -112,7 +112,7 @@ void asio_connection::write_next()
                           std::lock_guard<std::mutex> lock_guard(_mutex);
 
                           if (error) {
-                              qDebug() << "connection::write_next()" << error.message().c_str();
+//                               qDebug() << "connection::write_next()" << error.message().c_str();
                               close();
                               if (disconnect_callback) disconnect_callback();
                               return;
@@ -126,12 +126,12 @@ void asio_connection::write_next()
                                             {
                                                 _writing_queue = false;
                                                 if (error) {
-                                                    qDebug() << "connection::write_next()" << error.message().c_str();
+//                                                     qDebug() << "connection::write_next()" << error.message().c_str();
                                                     close();
                                                     if (disconnect_callback) disconnect_callback();
                                                     return;
                                                 }
-                                                qDebug() << "connection::write()" << length << "bytes";
+//                                                 qDebug() << "connection::write()" << length << "bytes";
 
                                                 _mutex.lock();
                                                 _queue.pop_front();

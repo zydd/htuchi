@@ -4,8 +4,11 @@
 #include <vector>
 #include <string>
 #include <memory>
+
+#ifdef PACKET_USE_QT
 #include <QVariant>
 #include <QDebug>
+#endif
 
 using byte = unsigned char;
 
@@ -16,7 +19,10 @@ public:
     packet(const std::vector<byte> &o);
     packet(std::vector<byte> &&o);
     inline packet(const std::string &str) { push(str); }
+
+#ifdef PACKET_USE_QT
     inline packet(const QVariant &data) { push(data); }
+#endif
 
     template<typename Itr>
     inline packet(Itr begin, Itr end) { push(begin, end); }
@@ -25,7 +31,14 @@ public:
 //     packet(const packet &) = delete;
 //     packet &operator= (const packet &) = delete;
 
-    void push(const QVariant &data);
+#ifdef PACKET_USE_QT
+    inline void push(const QVariant &data) {
+        QByteArray array;
+        QDataStream out(&array, QIODevice::WriteOnly);
+        out << data;
+        push(array.begin(), array.end());
+    }
+#endif
 
     inline void push(const std::string &str) { push(str.begin(), str.end()); }
 

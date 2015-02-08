@@ -1,5 +1,6 @@
 #include <random>
 #include <stdexcept>
+#include <cstring>
 #include <sodium.h>
 
 #include "sodium_secret_layer.h"
@@ -8,7 +9,7 @@ sodium_secret_layer::sodium_secret_layer(unsigned char *key)
     : key(key)
 {
     randombytes_buf(nonce_out, crypto_secretbox_KEYBYTES);
-    memset(nonce_in, 0, crypto_secretbox_NONCEBYTES);
+    std::memset(nonce_in, 0, crypto_secretbox_NONCEBYTES);
 }
 
 sodium_secret_layer::~sodium_secret_layer()
@@ -48,7 +49,7 @@ void sodium_secret_layer::processUp(packet &&data)
         increment(nonce_in);
 
         if (crypto_secretbox_open_easy(message.data(), ciphertext, clen, nonce_in, key) < 0) {
-            qDebug() << "decryption failed";
+//             qDebug() << "decryption failed";
             return;
         }
 

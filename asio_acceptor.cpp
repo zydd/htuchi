@@ -20,7 +20,7 @@ void asio_acceptor::accept(std::function<void(asio_connection&&)> callback)
     _acceptor.async_accept(_socket, [this, callback](const asio::error_code &error)
     {
         if (error) {
-            qDebug() << "acceptor::accept()" << error.message().c_str();
+//             qDebug() << "acceptor::accept()" << error.message().c_str();
             return;
         }
         callback({_io_service, std::move(_socket), tcp::resolver::query("","")});

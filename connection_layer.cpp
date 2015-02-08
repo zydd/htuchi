@@ -24,7 +24,7 @@ void connection_layer::add_connection(asio_connection &&conn)
 {
     std::lock_guard<std::mutex> lock_guard(_mutex);
     int id = _id++;
-    qDebug() << "add_connection() id:" << id;
+//     qDebug() << "add_connection() id:" << id;
     auto empl = _connections.emplace(id, std::move(conn));
 
     if (empl.second) {

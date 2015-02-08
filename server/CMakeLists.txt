@@ -1,6 +1,3 @@
-find_package(Qt4 REQUIRED)
-include_directories(${QT_INCLUDES} ${CMAKE_CURRENT_BINARY_DIR})
-
 add_executable(hamatuchid
                server.cpp
                ../abstract_layer.cpp
@@ -11,6 +8,6 @@ add_executable(hamatuchid
                ../asio_acceptor.cpp
                ../asio_connection.cpp)
 
-target_link_libraries(hamatuchid ${QT_QTCORE_LIBRARY} pthread)
+target_link_libraries(hamatuchid pthread)
 
 install(TARGETS hamatuchid RUNTIME DESTINATION bin)

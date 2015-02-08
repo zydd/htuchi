@@ -23,6 +23,9 @@
 #include <asio.hpp>
 #include <sodium.h>
 
+#define PACKET_USE_QT
+#include "../packet.h"
+
 #include "mainwindow.h"
 #include "chatwindow.h"
 #include "../sodium_secret_layer.h"
