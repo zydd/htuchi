@@ -1,4 +1,5 @@
 #include <mutex>
+#include <functional>
 
 #include "connection_layer.h"
 
@@ -54,7 +55,17 @@ void connection_layer::disconnected(int id)
 
 void connection_layer::receive(int id, packet &&data)
 {
-//     data.push((unsigned char) (id & 0xFF)); // !!Trunc!!
-    processDown(std::move(data));
+    data.sender_id = id;
+    processUp(std::move(data));
+}
+
+void connection_layer::processDown(packet&& data)
+{
+    if (data.receiver_id == 0)
+        return;
+
+    auto conn = _connections.find(data.receiver_id);
+    if (conn != _connections.end())
+        conn->second.send(std::move(data));
 }
 
