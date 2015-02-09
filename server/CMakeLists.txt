@@ -6,7 +6,8 @@ add_executable(hamatuchid
                ../packet.cpp
                ../connection_layer.cpp
                ../asio_acceptor.cpp
-               ../asio_connection.cpp)
+               ../asio_connection.cpp
+               client_manager.cpp)
 
 target_link_libraries(hamatuchid pthread)
 

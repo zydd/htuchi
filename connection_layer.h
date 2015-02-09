@@ -31,7 +31,7 @@ protected:
     std::unordered_map<int, asio_acceptor> _acceptors;
 
     void disconnected(int id);
-    virtual void processDown(packet&& data);
+    virtual void processDown(packet &&data);
 };
 
 #endif // CONNECTION_LAYER_H

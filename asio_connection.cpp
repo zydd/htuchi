@@ -59,10 +59,10 @@ void asio_connection::receive()
                              return;
                          }
 
-                         std::size_t size = _size_buffer_in[0];
-                         size += _size_buffer_in[1] << 8;
-                         size += _size_buffer_in[2] << 16;
-                         size += _size_buffer_in[3] << 24;
+                         std::size_t size = _size_buffer_in[0] << 0
+                                          | _size_buffer_in[1] << 8
+                                          | _size_buffer_in[2] << 16
+                                          | _size_buffer_in[3] << 24;
 
                          if (size > _buffer_size) {
 //                              qDebug() << "connection::receive() invalid size:" << size;
@@ -99,7 +99,7 @@ void asio_connection::write_next()
 
     auto size = _queue.front().size();
 
-    _size_buffer_out[0] = size & 0xFF;
+    _size_buffer_out[0] = (size >> 0) & 0xFF;
     _size_buffer_out[1] = (size >> 8) & 0xFF;
     _size_buffer_out[2] = (size >> 16) & 0xFF;
     _size_buffer_out[3] = (size >> 24) & 0xFF;

@@ -59,7 +59,7 @@ void connection_layer::receive(int id, packet &&data)
     processUp(std::move(data));
 }
 
-void connection_layer::processDown(packet&& data)
+void connection_layer::processDown(packet &&data)
 {
     if (data.receiver_id == 0)
         return;
