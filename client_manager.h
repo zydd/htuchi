@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <vector>
 #include <chrono>
+#include <functional>
 
 #include "abstract_layer.h"
 #include "packet.h"
@@ -25,15 +26,20 @@ public:
 
     client_manager();
     virtual void processUp(packet &&data);
+    virtual void processDown(packet &&data);
+    virtual void inserted();
 
     inline system_clock::time_point last_update() const
     { return _last_update; }
+    inline void set_info(std::vector<byte> &&info)
+    { _info = std::move(info); inserted(); }
 
 
 private:
     struct client_data {
         system_clock::time_point last_update;
         std::vector<byte> info;
+        abstract_layer *above;
 
         client_data() { update_time(); }
         client_data(std::vector<byte> &&info)
@@ -45,6 +51,8 @@ private:
     std::unordered_map<int, client_data> _clients;
     system_clock::time_point _last_update;
     bool _expecting_list = false;
+    std::vector<byte> _info;
+    std::function<abstract_layer *(int)> _allocator;
 };
 
 #endif // CLIENT_MANAGER

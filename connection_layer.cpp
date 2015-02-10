@@ -63,9 +63,14 @@ void connection_layer::processDown(packet &&data)
 {
     if (data.receiver_id == 0)
         return;
-
-    auto conn = _connections.find(data.receiver_id);
-    if (conn != _connections.end())
-        conn->second.send(std::move(data));
+    else if (data.receiver_id == packet::Broadcast) {
+        for (auto &conn : _connections) {
+            conn.second.send(packet(data));
+        }
+    } else {
+        auto conn = _connections.find(data.receiver_id);
+        if (conn != _connections.end())
+            conn->second.send(std::move(data));
+    }
 }
 

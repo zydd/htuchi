@@ -15,6 +15,8 @@ using byte = unsigned char;
 class packet : public std::vector<byte>
 {
 public:
+    enum { Broadcast = -1 };
+
     int sender_id = 0;
     int receiver_id = 0;
 
