@@ -52,7 +52,34 @@ QVariant ContactsModel::data(const QModelIndex &index, int role) const
 
 void ContactsModel::update(const User &usr) {
     QMutexLocker lock(&mutex);
-    for (int i = 0; i < users.size(); ++i)
-        if (users[i].id == usr.id)
+    for (int i = 0; i < users.size(); ++i) {
+        if (users[i].id == usr.id) {
             users[i] = usr;
+            return;
+        }
+    }
+    users.append(usr);
+    emit dataChanged(QModelIndex(),QModelIndex());  // TODO: Do it the righ way!
+}
+
+void ContactsModel::processUp(packet &&data)
+{
+    if (data.empty()) return;
+
+    byte flags = data[data.size() - 1];
+
+    client_manager::processUp(std::move(data));
+
+    if (flags & List) {
+        for (auto const& client : _clients) {
+            std::vector<byte> const& info = client.second.info;
+            if (!info.empty()) {
+                QByteArray array((char *)info.data(), info.size());
+                QDataStream ds(array);
+                QVariant var;
+                ds >> var;
+                update({client.first, User::Online, var.toString(), ""});
+            }
+        }
+    }
 }

@@ -17,10 +17,11 @@ asio_acceptor::~asio_acceptor()
 
 void asio_acceptor::accept(std::function<void(asio_connection&&)> callback)
 {
+    std::cout << "acceptor::acceptor() Listening on port " << _acceptor.local_endpoint().port() << std::endl;
     _acceptor.async_accept(_socket, [this, callback](const asio::error_code &error)
     {
+        std::cout << "acceptor::accept() " << error.message().c_str() << std::endl;
         if (error) {
-//             qDebug() << "acceptor::accept()" << error.message().c_str();
             return;
         }
         callback({_io_service, std::move(_socket), tcp::resolver::query("","")});

@@ -14,7 +14,8 @@ set(Hamatuchi_SRCS
     ../sodium_secret_layer.cpp
     ../asio_connection.cpp
     ../asio_acceptor.cpp
-    ../event_loop.cpp)
+    ../event_loop.cpp
+    ../client_manager.cpp)
 
 set(Hamatuchi_HDRS mainwindow.h userdelegate.h contactsmodel.h chatwindow.h)
 set(Hamatuchi_FORMS mainwindow.ui chatwindow.ui)

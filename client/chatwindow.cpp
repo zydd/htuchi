@@ -7,8 +7,9 @@
 #include "ui_chatwindow.h"
 
 
-ChatWindow::ChatWindow()
-    : ui(new Ui::ChatWindow)
+ChatWindow::ChatWindow(int id)
+    : ui(new Ui::ChatWindow),
+      receiver_id(id)
 {
     ui->setupUi(this);
     connect(ui->messageEdit, SIGNAL(returnPressed()), SLOT(send()));
@@ -22,10 +23,9 @@ ChatWindow::~ChatWindow()
 void ChatWindow::send()
 {
     if (!ui->messageEdit->text().isEmpty()) {
-        QVariant msg(ui->messageEdit->text());
-        default_event_loop.post([this, msg](){
-            processDown(msg);
-        });
+        packet msg(ui->messageEdit->text());
+        msg.receiver_id = receiver_id;
+        abstract_layer::processDown(std::move(msg));
         ui->messageEdit->clear();
     }
 }

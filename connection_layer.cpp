@@ -56,7 +56,7 @@ void connection_layer::disconnected(int id)
 void connection_layer::receive(int id, packet &&data)
 {
     data.sender_id = id;
-    processUp(std::move(data));
+    abstract_layer::processUp(std::move(data));
 }
 
 void connection_layer::processDown(packet &&data)

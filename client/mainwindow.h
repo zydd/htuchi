@@ -17,7 +17,9 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    explicit MainWindow(asio::io_service &ioService, QWidget *parent = 0);
+    ContactsModel *_contacts;
+
+    explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
 private slots:
@@ -25,8 +27,6 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
-    ContactsModel *_contacts;
-    asio::io_service &_io_service;
 };
 
 #endif // MAINWINDOW_H

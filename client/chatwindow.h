@@ -16,7 +16,7 @@ class ChatWindow : public QDialog, public abstract_layer
 {
     Q_OBJECT
 public:
-    ChatWindow();
+    ChatWindow(int id);
     ~ChatWindow();
     virtual void processUp(packet &&data);
 
@@ -28,6 +28,7 @@ private:
     Ui::ChatWindow* ui;
     QStringList queue;
     std::mutex _mutex;
+    int receiver_id;
 };
 
 #endif // CHATWINDOW_H

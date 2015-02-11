@@ -5,14 +5,16 @@
 #include <QStringList>
 #include <QMutexLocker>
 
-class ContactsModel : public QAbstractListModel
+#include "../client_manager.h"
+
+class ContactsModel : public QAbstractListModel, public client_manager
 {
     Q_OBJECT
 public:
     struct User {
         enum Presence {Online, Away, Offline};
 
-        u_int8_t id;
+        int id;
         Presence presence;
         QString name;
         QString status;
@@ -22,6 +24,7 @@ public:
     int rowCount(const QModelIndex &parent = QModelIndex()) const;
     QVariant data(const QModelIndex &index, int role) const;
     void update(const User &usr);
+    virtual void processUp(packet &&data);
 
 private:
     QList<User> users;

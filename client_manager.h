@@ -5,6 +5,7 @@
 #include <vector>
 #include <chrono>
 #include <functional>
+#include <mutex>
 
 #include "abstract_layer.h"
 #include "packet.h"
@@ -31,11 +32,13 @@ public:
 
     inline system_clock::time_point last_update() const
     { return _last_update; }
-    inline void set_info(std::vector<byte> &&info)
-    { _info = std::move(info); inserted(); }
 
+    void set_info(std::vector<byte> &&info);
 
-private:
+    inline void set_allocator(std::function<abstract_layer *(int)> func)
+    { _allocator = func; }
+
+protected:
     struct client_data {
         system_clock::time_point last_update;
         std::vector<byte> info;
@@ -48,11 +51,14 @@ private:
         void update_time() { last_update = system_clock::now(); }
     };
 
+    std::mutex _mutex;
     std::unordered_map<int, client_data> _clients;
     system_clock::time_point _last_update;
     bool _expecting_list = false;
     std::vector<byte> _info;
     std::function<abstract_layer *(int)> _allocator;
+
+    std::vector<byte> serialise_list();
 };
 
 #endif // CLIENT_MANAGER

@@ -2,11 +2,10 @@
 #include "ui_mainwindow.h"
 #include "userdelegate.h"
 
-MainWindow::MainWindow(asio::io_service &io_service, QWidget *parent) :
-    QMainWindow(parent),
-    ui(new Ui::MainWindow),
-    _contacts(new ContactsModel),
-    _io_service(io_service)
+MainWindow::MainWindow(QWidget *parent)
+    : QMainWindow(parent),
+      ui(new Ui::MainWindow),
+      _contacts(new ContactsModel)
 {
     ui->setupUi(this);
     ui->contacts->setModel(_contacts);

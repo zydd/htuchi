@@ -29,6 +29,7 @@
 #include "mainwindow.h"
 #include "chatwindow.h"
 #include "../sodium_secret_layer.h"
+#include "../client_manager.h"
 
 int main(int argc, char *argv[])
 {
@@ -42,15 +43,26 @@ int main(int argc, char *argv[])
     std::thread thread([&io_service](){io_service.run();});
     std::thread thread2([](){default_event_loop.run();});
 
-    QString pass = QInputDialog::getText(nullptr, "Password", "", QLineEdit::Password);
-    packet p(pass);
-    if (pass.isEmpty()) return 0;
-    unsigned char key[crypto_secretbox_KEYBYTES];
-    crypto_hash_sha256(key, p.data(), p.size());
+//     QString pass = QInputDialog::getText(nullptr, "Password", "", QLineEdit::Password);
+//     packet p(pass);
+//     if (pass.isEmpty()) return 0;
+//     unsigned char key[crypto_secretbox_KEYBYTES];
+//     crypto_hash_sha256(key, p.data(), p.size());
 
-    auto wnd = new ChatWindow;
     connection_layer conn;
     conn.add_connection({io_service, {"localhost", "48768"}});
+
+    auto wnd = new MainWindow();
+    wnd->_contacts->set_allocator([](int id) {
+        auto ret = new ChatWindow(id);
+        ret->show();
+        return ret;
+    });
+
+    conn.setAbove(wnd->_contacts);
+    wnd->_contacts->setBelow(&conn);
+
+    wnd->_contacts->set_info(packet(QString("Gabriel")));
 
     wnd->show();
     a.exec();

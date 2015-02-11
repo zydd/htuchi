@@ -1,4 +1,6 @@
 #include <algorithm>
+#include <iostream>
+
 #include "client_manager.h"
 
 client_manager::client_manager()
@@ -8,7 +10,8 @@ client_manager::client_manager()
 
 void client_manager::processUp(packet &&data)
 {
-    std::size_t len = data.size();
+    std::lock_guard<std::mutex> lock_guard(_mutex);
+    int len = data.size();
     if (len == 0)
         return;
 
@@ -32,13 +35,21 @@ void client_manager::processUp(packet &&data)
                       | data[len + 2] << 16
                       | data[len + 3] << 24;
         len -= info_size;
-        if (len <= 0) return;
+        if (len < 0) return;
 
         sender->second.update_time();
         _last_update = system_clock::now();
 
         sender->second.info.resize(info_size);
         std::copy_n(data.begin() + len, info_size, sender->second.info.begin());
+
+        for (auto const& client : _clients) {
+            packet pack = serialise_list();
+            pack.receiver_id = client.first;
+            pack.push_back(List);
+            abstract_layer::processDown(std::move(pack));
+        }
+        std::cout << "client_manager::Info\n";
     }
 
     if (flags & List) {
@@ -54,7 +65,7 @@ void client_manager::processUp(packet &&data)
 
         std::unordered_map<int, client_data> clients;
 
-        while (clients_size-- >= 0) {
+        while (clients_size--) {
             if (len <= 8) return;
             len -= 4;
             int id = data[len + 0] << 0
@@ -67,47 +78,29 @@ void client_manager::processUp(packet &&data)
                           | data[len + 2] << 16
                           | data[len + 3] << 24;
             len -= info_size;
-            if (len <= 0) return;
+            if (len < 0) return;
             std::vector<byte> info(info_size);
             std::copy_n(data.begin() + len, info_size, info.begin());
             clients.emplace(id, std::move(info));
         }
 
-        if (expected)
+        /*if (expected)*/ {
             _clients = std::move(clients);
+            std::cout << "client_manager::List\n";
+        }
     }
 
     if (flags & GetList) {
-        sender->second.update_time();
-        _last_update = system_clock::now();
-        packet pack;
-        pack.receiver_id = data.sender_id;
-
-        int clients_size = _clients.size();
-        pack.push_back((clients_size >> 0) & 0xFF);
-        pack.push_back((clients_size >> 8) & 0xFF);
-        pack.push_back((clients_size >> 16) & 0xFF);
-        pack.push_back((clients_size >> 24) & 0xFF);
-
-        for (auto const& client : _clients) {
-            int info_size = client.second.info.size();
-            if (info_size > 0) {
-                int id = client.first;
-                pack.push_back((id >> 0) & 0xFF);
-                pack.push_back((id >> 8) & 0xFF);
-                pack.push_back((id >> 16) & 0xFF);
-                pack.push_back((id >> 24) & 0xFF);
-
-                pack.push_back((info_size >> 0) & 0xFF);
-                pack.push_back((info_size >> 8) & 0xFF);
-                pack.push_back((info_size >> 16) & 0xFF);
-                pack.push_back((info_size >> 24) & 0xFF);
-
-                pack.reserve(info_size);
-                std::copy_n(client.second.info.begin(), info_size, pack.begin() + pack.size() - info_size);
-            }
-        }
-        abstract_layer::processDown(std::move(pack));
+//         sender->second.update_time();
+//         _last_update = system_clock::now();
+//         packet pack = serialise_list();
+//         pack.receiver_id = data.sender_id;
+//
+//         pack.push_back(List);
+//
+//         abstract_layer::processDown(std::move(pack));
+//
+//         std::cout << "client_manager::GetList\n";
     }
 
     if (flags & Forward) {
@@ -125,27 +118,36 @@ void client_manager::processUp(packet &&data)
                              | data[len + n_id * 4 + 2] << 16
                              | data[len + n_id * 4 + 3] << 24;
 
-            if (pack.receiver_id == data.sender_id)
-                continue;
+//             if (pack.receiver_id == data.sender_id)
+//                 continue;
 
             pack.resize(len);
             std::copy_n(data.begin(), len, pack.begin());
             pack.push_back(Data);
             abstract_layer::processDown(std::move(pack));
         }
+        std::cout << "client_manager::Forward\n";
     }
 
     if (flags & Data) {
         if (len <= 0) return;
         abstract_layer *&above = sender->second.above;
-        if (above || (above = _allocator(data.sender_id)))
+        if (!above && _allocator) {
+             above = _allocator(data.sender_id);
+             above->setBelow(this);
+        }
+        if (above){
+            data.resize(len);
             above->processUp(std::move(data));
+            std::cout << "client_manager::Data\n";
+        }
     }
 
     if (flags & LogOut) {
         sender->second.update_time();
         _last_update = system_clock::now();
         _clients.erase(sender);
+        std::cout << "client_manager::LogOut\n";
     }
 }
 
@@ -158,16 +160,17 @@ void client_manager::processDown(packet &&data)
     data.push_back((id >> 24) & 0xFF);
     data.push_back(1);
     data.push_back(Forward);
+    abstract_layer::processDown(std::move(data));
 }
 
 
 void client_manager::inserted()
 {
+    std::lock_guard<std::mutex> lock_guard(_mutex);
     if (!_info.empty()) {
-        packet pack;
+        packet pack(_info);
         pack.receiver_id = packet::Broadcast;
         int info_size = _info.size();
-        pack.push(_info.begin(), _info.end());
         pack.push_back((info_size >> 0) & 0xFF);
         pack.push_back((info_size >> 8) & 0xFF);
         pack.push_back((info_size >> 16) & 0xFF);
@@ -178,3 +181,41 @@ void client_manager::inserted()
     }
 }
 
+void client_manager::set_info(std::vector<byte>&& info)
+{
+    _mutex.lock();
+    _info = std::move(info);
+    _mutex.unlock();
+    inserted();
+}
+
+std::vector<byte> client_manager::serialise_list()
+{
+    std::vector<byte> pack;
+    for (auto const& client : _clients) {
+        int info_size = client.second.info.size();
+        if (info_size > 0) {
+            pack.resize(pack.size() + info_size);
+            std::copy_n(client.second.info.begin(), info_size, pack.begin() + pack.size() - info_size);
+
+            pack.push_back((info_size >> 0) & 0xFF);
+            pack.push_back((info_size >> 8) & 0xFF);
+            pack.push_back((info_size >> 16) & 0xFF);
+            pack.push_back((info_size >> 24) & 0xFF);
+
+            int id = client.first;
+            pack.push_back((id >> 0) & 0xFF);
+            pack.push_back((id >> 8) & 0xFF);
+            pack.push_back((id >> 16) & 0xFF);
+            pack.push_back((id >> 24) & 0xFF);
+        }
+    }
+
+    int clients_size = _clients.size();
+    pack.push_back((clients_size >> 0) & 0xFF);
+    pack.push_back((clients_size >> 8) & 0xFF);
+    pack.push_back((clients_size >> 16) & 0xFF);
+    pack.push_back((clients_size >> 24) & 0xFF);
+
+    return pack;
+}
