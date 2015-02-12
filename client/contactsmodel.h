@@ -5,7 +5,9 @@
 #include <QStringList>
 #include <QMutexLocker>
 
+#include "../packet.h"
 #include "../client_manager.h"
+
 
 class ContactsModel : public QAbstractListModel, public client_manager
 {
@@ -25,10 +27,17 @@ public:
     QVariant data(const QModelIndex &index, int role) const;
     void update(const User &usr);
     virtual void processUp(packet &&data);
+    virtual void build_above(int id);
 
 private:
     QList<User> users;
     mutable QMutex mutex;
+
+public slots:
+    void itemActivated(QModelIndex const& index);
+
+private slots:
+    void createChatWindow(int id);
 };
 
 #endif // CONTACTSMODEL_H

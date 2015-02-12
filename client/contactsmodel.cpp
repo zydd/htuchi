@@ -2,6 +2,7 @@
 #include <QBrush>
 
 #include "contactsmodel.h"
+#include "chatwindow.h"
 
 ContactsModel::ContactsModel(QObject *parent)
     : QAbstractListModel(parent)
@@ -59,7 +60,6 @@ void ContactsModel::update(const User &usr) {
         }
     }
     users.append(usr);
-    emit dataChanged(QModelIndex(),QModelIndex());  // TODO: Do it the righ way!
 }
 
 void ContactsModel::processUp(packet &&data)
@@ -81,5 +81,43 @@ void ContactsModel::processUp(packet &&data)
                 update({client.first, User::Online, var.toString(), ""});
             }
         }
+        emit dataChanged(QModelIndex(),QModelIndex());  // TODO: Do it the righ way!
     }
 }
+
+void ContactsModel::build_above(int id)
+{
+    QMetaObject::invokeMethod(this, "createChatWindow", Qt::BlockingQueuedConnection, Q_ARG(int, id));
+}
+
+void ContactsModel::createChatWindow(int id)
+{
+    auto client = _clients.find(id);
+    if (client != _clients.end()) {
+        abstract_layer *&above = client->second.above;
+        if (!above) above = new ChatWindow(id);
+    }
+}
+
+void ContactsModel::itemActivated(const QModelIndex& index)
+{
+    if (!index.isValid() || index.row() >= users.size())
+        return;
+
+    int id = users[index.row()].id;
+
+    auto client = _clients.find(id);
+    if (client != _clients.end()) {
+        abstract_layer *&above = client->second.above;
+
+        if (!above) {
+            above = new ChatWindow(id);
+            if (above) above->setBelow(this);
+        }
+        if (above) {
+            qDebug() << above << client->second.above << client->first;
+            above->processUp(QVariant());
+        }
+    }
+}
+

@@ -23,7 +23,6 @@
 #include <asio.hpp>
 #include <sodium.h>
 
-#define PACKET_USE_QT
 #include "../packet.h"
 
 #include "mainwindow.h"
@@ -53,16 +52,11 @@ int main(int argc, char *argv[])
     conn.add_connection({io_service, {"localhost", "48768"}});
 
     auto wnd = new MainWindow();
-    wnd->_contacts->set_allocator([](int id) {
-        auto ret = new ChatWindow(id);
-        ret->show();
-        return ret;
-    });
 
     conn.setAbove(wnd->_contacts);
     wnd->_contacts->setBelow(&conn);
 
-    wnd->_contacts->set_info(packet(QString("Gabriel")));
+    wnd->_contacts->set_info(packet(QString("Client")));
 
     wnd->show();
     a.exec();

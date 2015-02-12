@@ -13,6 +13,17 @@
 class client_manager : public abstract_layer
 {
     using system_clock = std::chrono::system_clock;
+    struct client_data {
+        system_clock::time_point last_update;
+        std::vector<byte> info;
+        abstract_layer *above = nullptr;
+
+        client_data() { update_time(); }
+        client_data(std::vector<byte> &&info)
+        : info(std::move(info))
+        { update_time(); }
+        void update_time() { last_update = system_clock::now(); }
+    };
 
 public:
     enum Flags {
@@ -30,33 +41,16 @@ public:
     virtual void processDown(packet &&data);
     virtual void inserted();
 
-    inline system_clock::time_point last_update() const
-    { return _last_update; }
+    inline virtual void build_above(int id) { }
 
     void set_info(std::vector<byte> &&info);
 
-    inline void set_allocator(std::function<abstract_layer *(int)> func)
-    { _allocator = func; }
 
 protected:
-    struct client_data {
-        system_clock::time_point last_update;
-        std::vector<byte> info;
-        abstract_layer *above;
-
-        client_data() { update_time(); }
-        client_data(std::vector<byte> &&info)
-            : info(std::move(info))
-        { update_time(); }
-        void update_time() { last_update = system_clock::now(); }
-    };
-
     std::mutex _mutex;
     std::unordered_map<int, client_data> _clients;
-    system_clock::time_point _last_update;
     bool _expecting_list = false;
     std::vector<byte> _info;
-    std::function<abstract_layer *(int)> _allocator;
 
     std::vector<byte> serialise_list();
 };

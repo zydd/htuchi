@@ -4,9 +4,7 @@
 #include "client_manager.h"
 
 client_manager::client_manager()
-{
-    _last_update = system_clock::now();
-}
+{ }
 
 void client_manager::processUp(packet &&data)
 {
@@ -20,7 +18,6 @@ void client_manager::processUp(packet &&data)
         auto new_client = _clients.emplace(data.sender_id, client_data());
         if (!new_client.second) return;
         sender = new_client.first;
-        _last_update = system_clock::now();
     }
 
     len -= 1;
@@ -38,7 +35,6 @@ void client_manager::processUp(packet &&data)
         if (len < 0) return;
 
         sender->second.update_time();
-        _last_update = system_clock::now();
 
         sender->second.info.resize(info_size);
         std::copy_n(data.begin() + len, info_size, sender->second.info.begin());
@@ -49,7 +45,7 @@ void client_manager::processUp(packet &&data)
             pack.push_back(List);
             abstract_layer::processDown(std::move(pack));
         }
-        std::cout << "client_manager::Info\n";
+        std::cout << "client_manager::Info" << std::endl;
     }
 
     if (flags & List) {
@@ -86,7 +82,7 @@ void client_manager::processUp(packet &&data)
 
         /*if (expected)*/ {
             _clients = std::move(clients);
-            std::cout << "client_manager::List\n";
+            std::cout << "client_manager::List" << std::endl;
         }
     }
 
@@ -106,7 +102,6 @@ void client_manager::processUp(packet &&data)
     if (flags & Forward) {
         if (len <= 1 + 4) return;
         sender->second.update_time();
-        _last_update = system_clock::now();
         len -= 1;
         int n_id = data[len];
         len -= n_id * 4;
@@ -123,31 +118,44 @@ void client_manager::processUp(packet &&data)
 
             pack.resize(len);
             std::copy_n(data.begin(), len, pack.begin());
+            int id = sender->first;
+            pack.push_back((id >> 0) & 0xFF);
+            pack.push_back((id >> 8) & 0xFF);
+            pack.push_back((id >> 16) & 0xFF);
+            pack.push_back((id >> 24) & 0xFF);
             pack.push_back(Data);
             abstract_layer::processDown(std::move(pack));
         }
-        std::cout << "client_manager::Forward\n";
+        std::cout << "client_manager::Forward" << std::endl;
     }
 
     if (flags & Data) {
-        if (len <= 0) return;
-        abstract_layer *&above = sender->second.above;
-        if (!above && _allocator) {
-             above = _allocator(data.sender_id);
-             above->setBelow(this);
-        }
-        if (above){
-            data.resize(len);
-            above->processUp(std::move(data));
-            std::cout << "client_manager::Data\n";
+        if (len <= 4) return;
+        len -= 4;
+        int sender_id = data[len + 0] << 0
+                      | data[len + 1] << 8
+                      | data[len + 2] << 16
+                      | data[len + 3] << 24;
+
+        auto client = _clients.find(sender_id);
+        if (client != _clients.end()) {
+            abstract_layer *&above = client->second.above;
+            if (!above) {
+                build_above(sender_id);
+                if (above) above->setBelow(this);
+            }
+            if (above) {
+                data.resize(len);
+                above->processUp(std::move(data));
+                std::cout << "client_manager::Data" << std::endl;
+            }
         }
     }
 
     if (flags & LogOut) {
         sender->second.update_time();
-        _last_update = system_clock::now();
         _clients.erase(sender);
-        std::cout << "client_manager::LogOut\n";
+        std::cout << "client_manager::LogOut" << std::endl;
     }
 }
 
@@ -160,6 +168,7 @@ void client_manager::processDown(packet &&data)
     data.push_back((id >> 24) & 0xFF);
     data.push_back(1);
     data.push_back(Forward);
+    data.receiver_id = packet::Broadcast;
     abstract_layer::processDown(std::move(data));
 }
 

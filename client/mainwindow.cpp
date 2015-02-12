@@ -10,6 +10,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     ui->contacts->setModel(_contacts);
     ui->contacts->setItemDelegate(new UserDelegate);
+    connect(ui->contacts, SIGNAL(activated(QModelIndex)), _contacts, SLOT(itemActivated(QModelIndex)));
 }
 
 MainWindow::~MainWindow()
@@ -17,7 +18,3 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::on_contacts_activated(const QModelIndex &/*index*/)
-{
-
-}
