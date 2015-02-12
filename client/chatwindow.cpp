@@ -1,6 +1,5 @@
 #include <thread>
 
-#define PACKET_USE_QT
 #include "../packet.h"
 
 #include "chatwindow.h"
@@ -26,15 +25,22 @@ void ChatWindow::send()
         packet msg(ui->messageEdit->text());
         msg.receiver_id = receiver_id;
         abstract_layer::processDown(std::move(msg));
+
+        ui->messageBrowser->setTextColor(Qt::black);
+        ui->messageBrowser->append("> " + ui->messageEdit->text());
         ui->messageEdit->clear();
     }
 }
 
 void ChatWindow::read_queue()
 {
+    show();
     while (!queue.isEmpty()) {
         std::lock_guard<std::mutex> lock_guard(_mutex);
-        ui->messageBrowser->append(queue.first());
+        if (!queue.first().isEmpty()) {
+            ui->messageBrowser->setTextColor(Qt::blue);
+            ui->messageBrowser->append("< " + queue.first());
+        }
         queue.pop_front();
     }
 }
