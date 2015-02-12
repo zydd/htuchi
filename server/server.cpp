@@ -1,4 +1,5 @@
 #include <thread>
+#include <functional>
 #include <asio.hpp>
 
 #include "../connection_layer.h"
@@ -20,6 +21,10 @@ int main(int argc, char **argv)
 
     conn.setAbove(&cm);
     cm.setBelow(&conn);
+
+    using std::placeholders::_1;
+    using std::placeholders::_2;
+    conn.set_connection_change(std::bind(&client_manager::update_client_status, &cm, _1, _2));
 
     io_service.run();
     default_event_loop.stop();

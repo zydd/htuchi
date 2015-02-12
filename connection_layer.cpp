@@ -12,7 +12,7 @@ connection_layer::~connection_layer()
 void connection_layer::add_acceptor(asio_acceptor &&acc)
 {
     std::lock_guard<std::mutex> lock_guard(_mutex);
-    int id = _id++;
+    int id = _gen_id++;
     auto empl = _acceptors.emplace(id, std::move(acc));
     if (empl.second) {
         asio_acceptor &acceptor = empl.first->second;
@@ -24,7 +24,7 @@ void connection_layer::add_acceptor(asio_acceptor &&acc)
 void connection_layer::add_connection(asio_connection &&conn)
 {
     std::lock_guard<std::mutex> lock_guard(_mutex);
-    int id = _id++;
+    int id = _gen_id++;
 //     qDebug() << "add_connection() id:" << id;
     auto empl = _connections.emplace(id, std::move(conn));
 
@@ -51,6 +51,8 @@ void connection_layer::disconnected(int id)
     auto conn = _connections.find(id);
     if (conn != _connections.end()) // TODO: try reconnect
         _connections.erase(conn);
+std::cout << "Id " << id << " disconnected." << std::endl;
+    if (_connection_change) _connection_change(id, Offline);
 }
 
 void connection_layer::receive(int id, packet &&data)

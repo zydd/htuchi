@@ -2,6 +2,7 @@
 #include <iostream>
 
 #include "client_manager.h"
+#include "connection_layer.h"
 
 client_manager::client_manager()
 { }
@@ -222,3 +223,22 @@ std::vector<byte> client_manager::serialise_list()
 
     return pack;
 }
+
+void client_manager::update_client_status(int id, int status)
+{
+    if (status == connection_layer::Offline) {
+        auto client = _clients.find(id);
+        if (client != _clients.end()) {
+            delete client->second.above;
+
+            _clients.erase(client);
+            for (auto const& client : _clients) {
+                packet pack = serialise_list();
+                pack.receiver_id = client.first;
+                pack.push_back(List);
+                abstract_layer::processDown(std::move(pack));
+            }
+        }
+    }
+}
+

@@ -71,6 +71,7 @@ void ContactsModel::processUp(packet &&data)
     client_manager::processUp(std::move(data));
 
     if (flags & List) {
+        users.clear();
         for (auto const& client : _clients) {
             std::vector<byte> const& info = client.second.info;
             if (!info.empty()) {
@@ -115,7 +116,6 @@ void ContactsModel::itemActivated(const QModelIndex& index)
             if (above) above->setBelow(this);
         }
         if (above) {
-            qDebug() << above << client->second.above << client->first;
             above->processUp(QVariant());
         }
     }

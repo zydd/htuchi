@@ -35,6 +35,7 @@ public:
     };
 
     client_manager();
+    void update_client_status(int id, int status);
     virtual void processUp(packet &&data);
     virtual void processDown(packet &&data);
     virtual void inserted();
