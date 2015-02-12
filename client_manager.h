@@ -32,8 +32,6 @@ public:
         GetList = 1 << 2,
         Forward = 1 << 3,
         Data    = 1 << 5,
-        LogOut  = 1 << 6,
-        Error   = 1 << 7,
     };
 
     client_manager();

@@ -151,12 +151,6 @@ void client_manager::processUp(packet &&data)
             }
         }
     }
-
-    if (flags & LogOut) {
-        sender->second.update_time();
-        _clients.erase(sender);
-        std::cout << "client_manager::LogOut" << std::endl;
-    }
 }
 
 void client_manager::processDown(packet &&data)
