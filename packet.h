@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <algorithm>
 
 #ifdef PACKET_USE_QT
 #include <QVariant>
@@ -21,31 +22,46 @@ public:
     int receiver_id = 0;
 
     inline packet() { }
-    packet(const std::vector<byte> &o);
-    packet(std::vector<byte> &&o);
-    inline packet(const std::string &str) { push(str); }
+    inline packet(std::vector<byte> const &o) : std::vector<byte>(std::move(o)) { }
+    inline packet(std::vector<byte> &&o) : std::vector<byte>(std::move(o)) { }
 
     template<typename Itr>
-    inline packet(Itr begin, Itr end) { push(begin, end); }
-
-// Move capture in lambda needed
-//     packet(const packet &) = delete;
-//     packet &operator= (const packet &) = delete;
-
-#ifdef PACKET_USE_QT
-    inline packet(const QVariant &data) { push(data); }
-    inline void push(const QVariant &data) {
-        QByteArray array;
-        QDataStream out(&array, QIODevice::WriteOnly);
-        out << data;
-        push(array.begin(), array.end());
-    }
-#endif
-
-    inline void push(const std::string &str) { push(str.begin(), str.end()); }
-
-    template<typename Itr>
-    inline void push(Itr begin, Itr end) { insert(this->end(), begin, end); }
+    inline packet(Itr begin, Itr end) { insert(this->end(), begin, end); }
 };
+
+inline std::vector<byte> &operator<< (std::vector<byte> &lhs, const int rhs)
+{
+    lhs.push_back((rhs >> 0) & 0xFF);
+    lhs.push_back((rhs >> 8) & 0xFF);
+    lhs.push_back((rhs >> 16) & 0xFF);
+    lhs.push_back((rhs >> 24) & 0xFF);
+
+    return lhs;
+}
+
+inline std::vector<byte> &operator>> (std::vector<byte> &lhs, int &rhs)
+{
+    const std::size_t len = lhs.size();
+
+    if (len < 4) throw std::runtime_error("cannot extract 'int' from 'std::vector<byte>'");
+
+    rhs = lhs[len - 4] << 0
+        | lhs[len - 3] << 8
+        | lhs[len - 2] << 16
+        | lhs[len - 1] << 24;
+
+    lhs.resize(len - 4);
+
+    return lhs;
+}
+
+template<typename Itr>
+inline void pop_n_back(std::vector<byte> &lhs, const std::size_t n, Itr iterator)
+{
+    if (n > lhs.size()) throw std::runtime_error("remove_back(): invalid size");
+
+    std::copy_n(lhs.end() - n, n, iterator);
+    lhs.resize(lhs.size() - n);
+}
 
 #endif // PACKET_H

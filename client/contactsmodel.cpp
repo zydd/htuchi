@@ -116,7 +116,7 @@ void ContactsModel::itemActivated(const QModelIndex& index)
             if (above) above->setBelow(this);
         }
         if (above) {
-            above->processUp(QVariant());
+            above->processUp(packet());
         }
     }
 }

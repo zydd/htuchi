@@ -48,7 +48,6 @@ public:
 protected:
     std::mutex _mutex;
     std::unordered_map<int, client_data> _clients;
-    bool _expecting_list = false;
     std::vector<byte> _info;
 
     std::vector<byte> serialise_list();

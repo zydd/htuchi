@@ -51,7 +51,7 @@ void connection_layer::disconnected(int id)
     auto conn = _connections.find(id);
     if (conn != _connections.end()) // TODO: try reconnect
         _connections.erase(conn);
-std::cout << "Id " << id << " disconnected." << std::endl;
+
     if (_connection_change) _connection_change(id, Offline);
 }
 

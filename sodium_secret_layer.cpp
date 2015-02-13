@@ -72,7 +72,7 @@ void sodium_secret_layer::processDown(packet &&data)
         throw std::runtime_error("crypto_secretbox_easy() error");
 
     packet pack(std::move(ciphertext));
-    pack.push(nonce_out, nonce_out + crypto_secretbox_NONCEBYTES);
+    pack.insert(pack.end(), nonce_out, nonce_out + crypto_secretbox_NONCEBYTES);
     pack.push_back(Encrypted | Nonce);
 
     _below->processDown(std::move(pack));

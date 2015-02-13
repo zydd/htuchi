@@ -1,6 +1,6 @@
 #include <thread>
 
-#include "../packet.h"
+#include "packet_util.h"
 
 #include "chatwindow.h"
 #include "ui_chatwindow.h"
@@ -22,7 +22,7 @@ ChatWindow::~ChatWindow()
 void ChatWindow::send()
 {
     if (!ui->messageEdit->text().isEmpty()) {
-        packet msg(ui->messageEdit->text());
+        packet msg(toPacket(ui->messageEdit->text()));
         msg.receiver_id = receiver_id;
         abstract_layer::processDown(std::move(msg));
 
@@ -48,12 +48,8 @@ void ChatWindow::read_queue()
 void ChatWindow::processUp(packet &&data)
 {
     std::lock_guard<std::mutex> lock_guard(_mutex);
-    QByteArray array((char *)data.data(), data.size());
-    QDataStream ds(array);
-    QVariant var;
-    ds >> var;
-    QString msg = var.toString();
-    queue.append(msg);
+
+    queue.append(toVariant(data).toString());
 
     QMetaObject::invokeMethod(this, "read_queue", Qt::QueuedConnection);
 }

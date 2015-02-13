@@ -23,7 +23,7 @@
 #include <asio.hpp>
 #include <sodium.h>
 
-#include "../packet.h"
+#include "packet_util.h"
 
 #include "mainwindow.h"
 #include "chatwindow.h"
@@ -56,7 +56,7 @@ int main(int argc, char *argv[])
     conn.setAbove(wnd->_contacts);
     wnd->_contacts->setBelow(&conn);
 
-    wnd->_contacts->set_info(packet(QString("Client")));
+    wnd->_contacts->set_info(toPacket(QString("Client")));
 
     wnd->show();
     a.exec();
