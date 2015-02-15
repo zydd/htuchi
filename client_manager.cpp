@@ -48,8 +48,6 @@ void client_manager::processUp(packet &&data)
         int clients_size;
         data >> clients_size;
 
-        std::unordered_map<int, client_data> clients;
-
         while (clients_size--) {
             if (data.size() <= 8) return;
 
@@ -61,10 +59,13 @@ void client_manager::processUp(packet &&data)
 
             std::vector<byte> info(info_size);
             pop_n_back(data, info_size, info.begin());
-            clients.emplace(id, std::move(info));
+            auto client = _clients.find(id);
+            if (client != _clients.end())
+                client->second.info = std::move(info);
+            else
+                _clients.emplace(id, std::move(info));
         }
 
-        _clients = std::move(clients);
         std::cout << "client_manager::List" << std::endl;
     }
 
