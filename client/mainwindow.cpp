@@ -18,6 +18,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     QPalette palette;
     palette.setBrush(QPalette::Active, QPalette::Base, this->palette().color(QPalette::Background));
+    palette.setBrush(QPalette::Inactive, QPalette::Base, this->palette().color(QPalette::Background));
     palette.setBrush(QPalette::Disabled, QPalette::Base, this->palette().color(QPalette::Background));
     ui->name->setPalette(palette);
     ui->status->setPalette(palette);
