@@ -133,25 +133,16 @@ void client_manager::processDown(packet &&data)
     abstract_layer::processDown(std::move(data));
 }
 
-
-void client_manager::inserted()
+void client_manager::send_info(std::vector<byte> &&info)
 {
     std::lock_guard<std::mutex> lock_guard(_mutex);
-    if (!_info.empty()) {
-        packet pack(_info);
+    if (!info.empty()) {
+        packet pack(info);
         pack.receiver_id = packet::Broadcast;
-        pack << _info.size();
-        pack.push_back(Info|GetList);
+        pack << info.size();
+        pack.push_back(Info);
         abstract_layer::processDown(std::move(pack));
     }
-}
-
-void client_manager::set_info(std::vector<byte>&& info)
-{
-    _mutex.lock();
-    _info = std::move(info);
-    _mutex.unlock();
-    inserted();
 }
 
 std::vector<byte> client_manager::serialise_list()

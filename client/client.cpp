@@ -19,7 +19,6 @@
  */
 
 #include <QApplication>
-#include <QInputDialog>
 #include <asio.hpp>
 #include <sodium.h>
 
@@ -55,8 +54,6 @@ int main(int argc, char *argv[])
 
     conn.setAbove(wnd->_contacts);
     wnd->_contacts->setBelow(&conn);
-
-    wnd->_contacts->set_info(toPacket(QString("Client")));
 
     wnd->show();
     a.exec();

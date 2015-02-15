@@ -4,6 +4,7 @@
 #include <thread>
 #include <QMainWindow>
 #include <QModelIndex>
+#include <QSettings>
 
 #include "../connection_layer.h"
 #include "contactsmodel.h"
@@ -24,6 +25,12 @@ public:
 
 private:
     Ui::MainWindow *ui;
+    QSettings _settings;
+
+
+private slots:
+    void nameChanged();
+    void statusChanged();
 };
 
 #endif // MAINWINDOW_H

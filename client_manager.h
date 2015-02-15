@@ -35,20 +35,16 @@ public:
     };
 
     client_manager();
-    void update_client_status(int id, int status);
     virtual void processUp(packet &&data);
     virtual void processDown(packet &&data);
-    virtual void inserted();
-
     inline virtual void build_above(int id) { }
-
-    void set_info(std::vector<byte> &&info);
+    void update_client_status(int id, int status);
+    void send_info(std::vector<byte> &&info);
 
 
 protected:
     std::mutex _mutex;
     std::unordered_map<int, client_data> _clients;
-    std::vector<byte> _info;
 
     std::vector<byte> serialise_list();
 };
