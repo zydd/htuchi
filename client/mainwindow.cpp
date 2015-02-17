@@ -4,6 +4,7 @@
 #include "ui_mainwindow.h"
 #include "userdelegate.h"
 #include "packet_util.h"
+#include "optionswindow.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent),
@@ -24,20 +25,14 @@ MainWindow::MainWindow(QWidget *parent)
     ui->status->setPalette(palette);
 
     QVariant username = _settings.value("username");
-    if (username.isNull()) {
-        bool ok;
-        do {
-            username = QInputDialog::getText(this, "Name", "Insert your name", QLineEdit::Normal, QString(), &ok);
-        } while (username.isNull() && ok);
-
-        if (!ok) throw std::runtime_error("username not set");
-        _settings.setValue("username", username);
-    }
-
-    ui->name->setText(username.toString());
-    _contacts->send_info(toPacket(username));
+    if (username.isNull())
+        options();
+    else
+        setInfo();
 
     connect(ui->name, SIGNAL(returnPressed()), SLOT(nameChanged()));
+
+    connect(ui->toolButton, SIGNAL(pressed()), SLOT(options()));
 }
 
 MainWindow::~MainWindow()
@@ -60,3 +55,18 @@ void MainWindow::statusChanged()
 {
 
 }
+
+void MainWindow::options()
+{
+    OptionsWindow opt;
+    connect(&opt, SIGNAL(infoUpdated()), SLOT(setInfo()));
+    opt.exec();
+}
+
+void MainWindow::setInfo()
+{
+    QVariant username = _settings.value("username");
+    ui->name->setText(username.toString());
+    _contacts->send_info(toPacket(username));
+}
+

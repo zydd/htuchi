@@ -31,6 +31,8 @@ private:
 private slots:
     void nameChanged();
     void statusChanged();
+    void setInfo();
+    void options();
 };
 
 #endif // MAINWINDOW_H

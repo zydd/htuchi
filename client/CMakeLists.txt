@@ -8,6 +8,7 @@ set(Hamatuchi_SRCS
     userdelegate.cpp
     contactsmodel.cpp
     chatwindow.cpp
+    optionswindow.cpp
     ../abstract_layer.cpp
     ../connection_layer.cpp
     ../sodium_secret_layer.cpp
@@ -16,8 +17,8 @@ set(Hamatuchi_SRCS
     ../event_loop.cpp
     ../client_manager.cpp)
 
-set(Hamatuchi_HDRS mainwindow.h userdelegate.h contactsmodel.h chatwindow.h)
-set(Hamatuchi_FORMS mainwindow.ui chatwindow.ui)
+set(Hamatuchi_HDRS mainwindow.h userdelegate.h contactsmodel.h chatwindow.h optionswindow.h)
+set(Hamatuchi_FORMS mainwindow.ui chatwindow.ui optionswindow.ui)
 set(Hamatuchi_RES res.qrc)
 
 qt4_wrap_cpp(Hamatuchi_HDRS_MOC ${Hamatuchi_HDRS})
