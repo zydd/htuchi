@@ -1,7 +1,6 @@
 #include <QInputDialog>
 #include <QByteArray>
 #include <sodium.h>
-#include <QDebug>
 
 #include "optionswindow.h"
 #include "ui_optionswindow.h"
@@ -14,7 +13,7 @@ OptionsWindow::OptionsWindow(QWidget *parent)
 {
     ui->setupUi(this);
     ui->nameEdit->setText(_settings.value("username").toString());
-    if (_settings.value("hashed_password").isNull())
+    if (_settings.value("key").isNull())
         ui->passwordEdit->setPlaceholderText(QString());
 
 }
@@ -32,16 +31,22 @@ void OptionsWindow::accept()
         if (ok) {
             if (password == ui->passwordEdit->text()) {
                 QByteArray pass = password.toUtf8();
-                QByteArray hashed_password(crypto_pwhash_scryptsalsa208sha256_STRBYTES, Qt::Uninitialized);
+                QByteArray key(crypto_secretbox_KEYBYTES, Qt::Uninitialized);
 
-                if (crypto_pwhash_scryptsalsa208sha256_str(
-                        hashed_password.data(), pass.constData(), pass.size(),
-                        crypto_pwhash_scryptsalsa208sha256_OPSLIMIT_SENSITIVE,
-                        crypto_pwhash_scryptsalsa208sha256_MEMLIMIT_SENSITIVE) != 0) {
-                    throw std::runtime_error("crypto_pwhash_scryptsalsa208sha256_str() failed");
+//                 QByteArray salt(crypto_pwhash_scryptsalsa208sha256_SALTBYTES, Qt::Uninitialized);
+//                 randombytes_buf(salt.data(), salt.size());
+                QByteArray salt("0$DkP.qAf7Vjt7ULEs8y.begKxWeV4h9MpxI/kUbuI49Jy3VRhgX2HZ8xHwL7QSR",
+                                crypto_pwhash_scryptsalsa208sha256_SALTBYTES);
+
+                if (crypto_pwhash_scryptsalsa208sha256(
+                        (unsigned char *) key.data(), key.size(), pass.constData(), pass.size(), (unsigned char *) salt.constData(),
+                        crypto_pwhash_scryptsalsa208sha256_OPSLIMIT_INTERACTIVE,
+                        crypto_pwhash_scryptsalsa208sha256_MEMLIMIT_INTERACTIVE) != 0) {
+                    throw std::runtime_error("crypto_pwhash_scryptsalsa208sha256() failed");
                 }
 
-                _settings.setValue("hashed_password", hashed_password);
+                _settings.setValue("key", key);
+                _settings.setValue("key_nonce", salt);
             } else {
                 return;  // Do not accept
             }

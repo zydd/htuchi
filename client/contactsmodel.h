@@ -4,10 +4,11 @@
 #include <QAbstractListModel>
 #include <QStringList>
 #include <QMutexLocker>
+#include <QSettings>
 
 #include "../packet.h"
 #include "../client_manager.h"
-
+#include "chatwindow.h"
 
 class ContactsModel : public QAbstractListModel, public client_manager
 {
@@ -31,13 +32,15 @@ public:
 
 private:
     QList<User> users;
+    QMap<int, ChatWindow *> _chatwindows;
     mutable QMutex mutex;
+    QSettings _settings;
 
 public slots:
     void itemActivated(QModelIndex const& index);
 
 private slots:
-    void createChatWindow(int id);
+    ChatWindow *createChatWindow();
 };
 
 #endif // CONTACTSMODEL_H

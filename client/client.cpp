@@ -41,12 +41,6 @@ int main(int argc, char *argv[])
     std::thread thread([&io_service](){io_service.run();});
     std::thread thread2([](){default_event_loop.run();});
 
-//     QString pass = QInputDialog::getText(nullptr, "Password", "", QLineEdit::Password);
-//     packet p(pass);
-//     if (pass.isEmpty()) return 0;
-//     unsigned char key[crypto_secretbox_KEYBYTES];
-//     crypto_hash_sha256(key, p.data(), p.size());
-
     connection_layer conn;
     conn.add_connection({io_service, {"localhost", "48768"}});
 

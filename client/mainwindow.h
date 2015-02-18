@@ -27,7 +27,6 @@ private:
     Ui::MainWindow *ui;
     QSettings _settings;
 
-
 private slots:
     void nameChanged();
     void statusChanged();

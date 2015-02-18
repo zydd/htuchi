@@ -1,15 +1,19 @@
-#include <random>
+#include <algorithm>
 #include <stdexcept>
-#include <cstring>
+#include <iostream>
 #include <sodium.h>
 
 #include "sodium_secret_layer.h"
 
-sodium_secret_layer::sodium_secret_layer(unsigned char *key)
-    : key(key)
+sodium_secret_layer::sodium_secret_layer(std::unique_ptr<unsigned char> key)
+    : key(std::move(key))
 {
     randombytes_buf(nonce_out, crypto_secretbox_KEYBYTES);
-    std::memset(nonce_in, 0, crypto_secretbox_NONCEBYTES);
+    packet pack(nonce_out, nonce_out + crypto_secretbox_NONCEBYTES);
+    pack.push_back(Nonce);
+    abstract_layer::processDown(std::move(pack));
+
+    std::fill_n(nonce_in, crypto_secretbox_NONCEBYTES, 0);
 }
 
 sodium_secret_layer::~sodium_secret_layer()
@@ -17,18 +21,13 @@ sodium_secret_layer::~sodium_secret_layer()
 
 void sodium_secret_layer::increment(unsigned char nonce[crypto_secretbox_NONCEBYTES])
 {
-    int i = 0;
-    while (++nonce[i] == 0 && i < crypto_secretbox_NONCEBYTES) ++i;
+    for (int i = 0; !++nonce[i] && i < crypto_secretbox_NONCEBYTES; ++i);
 }
-
 
 void sodium_secret_layer::processUp(packet &&data)
 {
-    if (!_above) return;
-
     std::size_t clen = data.size();
     std::size_t mlen = clen - crypto_secretbox_MACBYTES;
-    unsigned char *ciphertext = data.data();
 
     if (clen == 0)
         return;
@@ -38,51 +37,43 @@ void sodium_secret_layer::processUp(packet &&data)
     data.pop_back();
 
     if (flags & Nonce) {
+        std::cout << "setting nonce" << std::endl;
         if (clen < crypto_secretbox_NONCEBYTES)
             return;
         clen -= crypto_secretbox_NONCEBYTES;
-        memcpy(nonce_in, ciphertext + clen, crypto_secretbox_NONCEBYTES);
+        pop_n_back(data, crypto_secretbox_NONCEBYTES, nonce_in);
     }
 
-    if (flags & Encrypted) {
+    if (flags & Data) {
         std::vector<byte> message(mlen);
-        increment(nonce_in);
+        increment(nonce_in);std::cout << "#D: " << (int)*nonce_in << std::endl;
 
-        if (crypto_secretbox_open_easy(message.data(), ciphertext, clen, nonce_in, key) < 0) {
-//             qDebug() << "decryption failed";
+        if (crypto_secretbox_open_easy(message.data(), data.data(), clen, nonce_in, key.get()) < 0) {
+            std::cout << "crypto_secretbox_open_easy() failed" << std::endl;
             return;
         }
 
-        _above->processUp(std::move(message));
-    } else
-        _above->processUp(std::move(data));
+        abstract_layer::processUp(std::move(message));
+    } else {
+        abstract_layer::processUp(std::move(data));
+    }
 }
 
 void sodium_secret_layer::processDown(packet &&data)
 {
-    if (!_below) return;
-
     std::size_t mlen = data.size();
     std::size_t clen = crypto_secretbox_MACBYTES + mlen;
     unsigned char *message = data.data();
-    std::vector<byte> ciphertext(clen);
+    packet ciphertext;
+    ciphertext.resize(clen);
 
-    increment(nonce_out);
-    if (crypto_secretbox_easy(ciphertext.data(), message, mlen, nonce_out, key) < 0)
+    increment(nonce_out);std::cout << "#E: " << (int)*nonce_out << std::endl;
+    if (crypto_secretbox_easy(ciphertext.data(), message, mlen, nonce_out, key.get()) < 0)
         throw std::runtime_error("crypto_secretbox_easy() error");
 
-    packet pack(std::move(ciphertext));
-    pack.insert(pack.end(), nonce_out, nonce_out + crypto_secretbox_NONCEBYTES);
-    pack.push_back(Encrypted | Nonce);
+    ciphertext.push_back(Data);
 
-    _below->processDown(std::move(pack));
-}
-
-void sodium_secret_layer::inserted()
-{
-    if (!_below) return;
-    packet pack(nonce_out, nonce_out + crypto_secretbox_NONCEBYTES);
-    pack.push_back(Nonce);
-    _below->processDown(std::move(pack));
+    ciphertext.receiver_id = data.receiver_id;
+    abstract_layer::processDown(std::move(ciphertext));
 }
 

@@ -48,6 +48,8 @@ void client_manager::processUp(packet &&data)
         int clients_size;
         data >> clients_size;
 
+        std::unordered_map<int, client_data> clients;
+
         while (clients_size--) {
             if (data.size() <= 8) return;
 
@@ -59,12 +61,10 @@ void client_manager::processUp(packet &&data)
 
             std::vector<byte> info(info_size);
             pop_n_back(data, info_size, info.begin());
-            auto client = _clients.find(id);
-            if (client != _clients.end())
-                client->second.info = std::move(info);
-            else
-                _clients.emplace(id, std::move(info));
+            clients.emplace(id, std::move(info));
         }
+
+        _clients = std::move(clients);
 
         std::cout << "client_manager::List" << std::endl;
     }
@@ -100,6 +100,7 @@ void client_manager::processUp(packet &&data)
             std::copy_n(data.begin(), data_len, pack.begin());
             pack << sender->first;
             pack.push_back(Data);
+            std::cout << "forward from/to " << pack.receiver_id << "/" << sender->first << std::endl;
             abstract_layer::processDown(std::move(pack));
         }
         std::cout << "client_manager::Forward" << std::endl;
@@ -110,24 +111,17 @@ void client_manager::processUp(packet &&data)
         int sender_id;
         data >> sender_id;
 
-        auto client = _clients.find(sender_id);
-        if (client != _clients.end()) {
-            abstract_layer *&above = client->second.above;
-            if (!above) {
-                build_above(sender_id);
-                if (above) above->setBelow(this);
-            }
-            if (above) {
-                above->processUp(std::move(data));
-                std::cout << "client_manager::Data" << std::endl;
-            }
+        if (!_above[sender_id]) build_above(sender_id);
+        if (_above[sender_id]) {
+            _above[sender_id]->processUp(std::move(data));
+            std::cout << "client_manager::Data" << std::endl;
         }
     }
 }
 
-void client_manager::processDown(packet &&data)
+void client_manager::processDown(int id, packet &&data)
 {
-    data << data.receiver_id;
+    data << id;
     data.push_back(1);
     data.push_back(Forward);
     data.receiver_id = packet::Broadcast;
@@ -170,8 +164,6 @@ void client_manager::update_client_status(int id, int status)
     if (status == connection_layer::Offline) {
         auto client = _clients.find(id);
         if (client != _clients.end()) {
-            delete client->second.above;
-
             _clients.erase(client);
             for (auto const& client : _clients) {
                 packet pack = serialise_list();
@@ -180,6 +172,34 @@ void client_manager::update_client_status(int id, int status)
                 abstract_layer::processDown(std::move(pack));
             }
         }
+    }
+}
+
+void client_manager::build_above(int id)
+{
+    if (_above[id]) {
+        struct addressing_layer : public abstract_layer
+        {
+            std::function<void(packet &&)> _processDown;
+
+            addressing_layer(abstract_layer *above, std::function<void(packet &&)> _processDown)
+                : _processDown(_processDown)
+            {
+                this->setAbove(above);
+                above->setBelow(this);
+            }
+
+            virtual void processUp(packet &&data) {
+                _above->processUp(std::move(data));
+            }
+
+            virtual void processDown(packet &&data) {
+                _processDown(std::move(data));
+            }
+        };
+
+        using std::placeholders::_1;
+        _above[id] = new addressing_layer(_above[id], std::bind(&client_manager::processDown, this, id, _1));
     }
 }
 

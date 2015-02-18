@@ -1,14 +1,18 @@
 #include <QIcon>
 #include <QBrush>
+#include <QApplication>
+#include <QThread>
+#include <QDebug>
+#include <thread>
 
 #include "contactsmodel.h"
 #include "chatwindow.h"
+#include "../sodium_secret_layer.h"
 
 ContactsModel::ContactsModel(QObject *parent)
-    : QAbstractListModel(parent)
-{
-
-}
+    : QAbstractListModel(parent),
+      _settings("zydd", "htuchi")
+{ }
 
 int ContactsModel::rowCount(const QModelIndex &/*parent*/) const
 {
@@ -88,16 +92,33 @@ void ContactsModel::processUp(packet &&data)
 
 void ContactsModel::build_above(int id)
 {
-    QMetaObject::invokeMethod(this, "createChatWindow", Qt::BlockingQueuedConnection, Q_ARG(int, id));
+    ChatWindow *wnd = nullptr;
+    if (qApp->thread() == QThread::currentThread())
+        wnd = new ChatWindow;
+    else
+        QMetaObject::invokeMethod(this, "createChatWindow", Qt::BlockingQueuedConnection, Q_RETURN_ARG(ChatWindow*, wnd));
+    if (!wnd) return;
+
+    auto client = _clients.find(id);
+    if (client == _clients.end()) return;
+
+    QByteArray key = _settings.value("key").toByteArray();
+
+    if (key.size() != crypto_secretbox_KEYBYTES) return;
+    unsigned char *pkey = new unsigned char[key.size()];
+    std::copy_n(key.begin(), crypto_secretbox_KEYBYTES, pkey);
+
+    auto enc = new sodium_secret_layer(std::unique_ptr<unsigned char>(pkey));
+    enc->setAbove(wnd);
+    wnd->setBelow(enc);
+    _above[id] = enc;
+    _chatwindows[id] = wnd;
+    client_manager::build_above(id);
 }
 
-void ContactsModel::createChatWindow(int id)
+ChatWindow *ContactsModel::createChatWindow()
 {
-    auto client = _clients.find(id);
-    if (client != _clients.end()) {
-        abstract_layer *&above = client->second.above;
-        if (!above) above = new ChatWindow(id);
-    }
+    return new ChatWindow;
 }
 
 void ContactsModel::itemActivated(const QModelIndex& index)
@@ -107,17 +128,7 @@ void ContactsModel::itemActivated(const QModelIndex& index)
 
     int id = users[index.row()].id;
 
-    auto client = _clients.find(id);
-    if (client != _clients.end()) {
-        abstract_layer *&above = client->second.above;
-
-        if (!above) {
-            above = new ChatWindow(id);
-            if (above) above->setBelow(this);
-        }
-        if (above) {
-            above->processUp(packet());
-        }
-    }
+    if (!_above[id]) build_above(id);
+    if (_above[id]) _chatwindows[id]->show();
 }
 

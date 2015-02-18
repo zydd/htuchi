@@ -6,9 +6,8 @@
 #include "ui_chatwindow.h"
 
 
-ChatWindow::ChatWindow(int id)
-    : ui(new Ui::ChatWindow),
-      receiver_id(id)
+ChatWindow::ChatWindow()
+    : ui(new Ui::ChatWindow)
 {
     ui->setupUi(this);
     connect(ui->messageEdit, SIGNAL(returnPressed()), SLOT(send()));
@@ -23,7 +22,6 @@ void ChatWindow::send()
 {
     if (!ui->messageEdit->text().isEmpty()) {
         packet msg(toPacket(ui->messageEdit->text()));
-        msg.receiver_id = receiver_id;
         abstract_layer::processDown(std::move(msg));
 
         ui->messageBrowser->setTextColor(Qt::black);

@@ -16,7 +16,6 @@ class client_manager : public abstract_layer
     struct client_data {
         system_clock::time_point last_update;
         std::vector<byte> info;
-        abstract_layer *above = nullptr;
 
         client_data() { update_time(); }
         client_data(std::vector<byte> &&info)
@@ -36,8 +35,8 @@ public:
 
     client_manager();
     virtual void processUp(packet &&data);
-    virtual void processDown(packet &&data);
-    inline virtual void build_above(int id) { }
+    virtual void processDown(int id, packet &&data);
+    virtual void build_above(int id);
     void update_client_status(int id, int status);
     void send_info(std::vector<byte> &&info);
 
@@ -45,6 +44,7 @@ public:
 protected:
     std::mutex _mutex;
     std::unordered_map<int, client_data> _clients;
+    std::unordered_map<int, abstract_layer *> _above;
 
     std::vector<byte> serialise_list();
 };
