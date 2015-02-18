@@ -103,12 +103,11 @@ void ContactsModel::build_above(int id)
     if (client == _clients.end()) return;
 
     QByteArray key = _settings.value("key").toByteArray();
-
     if (key.size() != crypto_secretbox_KEYBYTES) return;
     unsigned char *pkey = new unsigned char[key.size()];
     std::copy_n(key.begin(), crypto_secretbox_KEYBYTES, pkey);
-
     auto enc = new sodium_secret_layer(std::unique_ptr<unsigned char>(pkey));
+
     enc->setAbove(wnd);
     wnd->setBelow(enc);
     _above[id] = enc;
@@ -128,7 +127,12 @@ void ContactsModel::itemActivated(const QModelIndex& index)
 
     int id = users[index.row()].id;
 
-    if (!_above[id]) build_above(id);
-    if (_above[id]) _chatwindows[id]->show();
+    auto cw = _chatwindows.find(id);
+    if (cw == _chatwindows.end())
+        build_above(id);
+
+    cw = _chatwindows.find(id);
+    if (cw != _chatwindows.end() && cw->second)
+        cw->second->show();
 }
 

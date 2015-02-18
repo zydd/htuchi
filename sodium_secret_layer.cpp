@@ -9,10 +9,6 @@ sodium_secret_layer::sodium_secret_layer(std::unique_ptr<unsigned char> key)
     : key(std::move(key))
 {
     randombytes_buf(nonce_out, crypto_secretbox_KEYBYTES);
-    packet pack(nonce_out, nonce_out + crypto_secretbox_NONCEBYTES);
-    pack.push_back(Nonce);
-    abstract_layer::processDown(std::move(pack));
-
     std::fill_n(nonce_in, crypto_secretbox_NONCEBYTES, 0);
 }
 
@@ -37,7 +33,6 @@ void sodium_secret_layer::processUp(packet &&data)
     data.pop_back();
 
     if (flags & Nonce) {
-        std::cout << "setting nonce" << std::endl;
         if (clen < crypto_secretbox_NONCEBYTES)
             return;
         clen -= crypto_secretbox_NONCEBYTES;
@@ -46,12 +41,12 @@ void sodium_secret_layer::processUp(packet &&data)
 
     if (flags & Data) {
         std::vector<byte> message(mlen);
-        increment(nonce_in);std::cout << "#D: " << (int)*nonce_in << std::endl;
 
         if (crypto_secretbox_open_easy(message.data(), data.data(), clen, nonce_in, key.get()) < 0) {
             std::cout << "crypto_secretbox_open_easy() failed" << std::endl;
             return;
         }
+        increment(nonce_in);
 
         abstract_layer::processUp(std::move(message));
     } else {
@@ -61,19 +56,28 @@ void sodium_secret_layer::processUp(packet &&data)
 
 void sodium_secret_layer::processDown(packet &&data)
 {
+    byte flags = 0;
     std::size_t mlen = data.size();
     std::size_t clen = crypto_secretbox_MACBYTES + mlen;
     unsigned char *message = data.data();
-    packet ciphertext;
-    ciphertext.resize(clen);
+    packet pack;
+    pack.resize(clen);
 
-    increment(nonce_out);std::cout << "#E: " << (int)*nonce_out << std::endl;
-    if (crypto_secretbox_easy(ciphertext.data(), message, mlen, nonce_out, key.get()) < 0)
+    increment(nonce_out);
+    if (crypto_secretbox_easy(pack.data(), message, mlen, nonce_out, key.get()) < 0)
         throw std::runtime_error("crypto_secretbox_easy() error");
 
-    ciphertext.push_back(Data);
+    flags |= Data;
 
-    ciphertext.receiver_id = data.receiver_id;
-    abstract_layer::processDown(std::move(ciphertext));
+    if (!_synchronized) {
+        _synchronized = true;
+        pack.insert(pack.end(), nonce_out, nonce_out + crypto_secretbox_NONCEBYTES);
+        flags |= Nonce;
+    }
+
+    pack.push_back(flags);
+
+    pack.receiver_id = data.receiver_id;
+    abstract_layer::processDown(std::move(pack));
 }
 

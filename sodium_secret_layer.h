@@ -19,6 +19,7 @@ private:
         Data  = 1 << 0,
         Nonce = 1 << 1
     };
+    bool _synchronized = false;
     std::unique_ptr<unsigned char> key;
     unsigned char nonce_in[crypto_secretbox_NONCEBYTES];
     unsigned char nonce_out[crypto_secretbox_NONCEBYTES];

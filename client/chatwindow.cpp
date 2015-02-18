@@ -1,16 +1,18 @@
 #include <thread>
+#include <QDebug>
 
 #include "packet_util.h"
-
 #include "chatwindow.h"
 #include "ui_chatwindow.h"
 
 
-ChatWindow::ChatWindow()
-    : ui(new Ui::ChatWindow)
+ChatWindow::ChatWindow(QWidget *parent)
+    : QDialog(parent),
+      ui(new Ui::ChatWindow)
 {
     ui->setupUi(this);
     connect(ui->messageEdit, SIGNAL(returnPressed()), SLOT(send()));
+    show();  // TODO: find out why I get *** corrupted double-linked list *** without this line
 }
 
 ChatWindow::~ChatWindow()

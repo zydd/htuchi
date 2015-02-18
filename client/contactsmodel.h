@@ -32,7 +32,7 @@ public:
 
 private:
     QList<User> users;
-    QMap<int, ChatWindow *> _chatwindows;
+    std::unordered_map<int, ChatWindow *> _chatwindows;
     mutable QMutex mutex;
     QSettings _settings;
 

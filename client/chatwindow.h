@@ -16,7 +16,7 @@ class ChatWindow : public QDialog, public abstract_layer
 {
     Q_OBJECT
 public:
-    ChatWindow();
+    ChatWindow(QWidget *parent = nullptr);
     ~ChatWindow();
     virtual void processUp(packet &&data);
 
