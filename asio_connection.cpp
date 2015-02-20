@@ -103,7 +103,7 @@ void asio_connection::write_next()
                           std::lock_guard<std::mutex> lock_guard(_mutex);
 
                           if (error) {
-                              std::cout << "connection::write_next() " << error.message().c_str() << std::endl;
+                              std::cout << "connection::write_next() (size) " << error.message().c_str() << std::endl;
 //                               close();
                               if (disconnect_callback) disconnect_callback();
                               return;
@@ -115,7 +115,7 @@ void asio_connection::write_next()
                                             [this](const asio::error_code &error, const std::size_t &length) {
                                                 _writing_queue = false;
                                                 if (error) {
-                                                    std::cout << "connection::write_next() " << error.message().c_str() << std::endl;
+                                                    std::cout << "connection::write_next() (data) " << error.message().c_str() << std::endl;
                                                     close();
                                                     if (disconnect_callback) disconnect_callback();
                                                     return;

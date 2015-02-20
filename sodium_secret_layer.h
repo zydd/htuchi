@@ -16,12 +16,14 @@ public:
 
 private:
     enum Flags {
-        Data  = 1 << 0,
-        Nonce = 1 << 1
+        Encrypted  = 1 << 0,
+        Nonce      = 1 << 1
     };
+
     std::unique_ptr<unsigned char> key;
     unsigned char nonce_in[crypto_secretbox_NONCEBYTES];
     unsigned char nonce_out[crypto_secretbox_NONCEBYTES];
+    bool syncronized = false;
 
     void increment(unsigned char nonce[crypto_secretbox_NONCEBYTES]);
 };
