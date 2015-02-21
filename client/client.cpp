@@ -1,23 +1,3 @@
-/*
- * +--------+----------------+
- * |        | Encryption     |
- * |        +----------------+
- * | Server | Addressing     |
- * |        +----------------+
- * |        | Delivery       |
- * +--------+----------------+
- * |        | Encryption     |
- * |        +----------------+
- * |        | Compression    |
- * |        +----------------+
- * | Client | Authentication |
- * |        +----------------+
- * |        | Delivery       |
- * |        +----------------+
- * |        | Message        |
- * +--------+----------------+
- */
-
 #include <QApplication>
 #include <asio.hpp>
 #include <sodium.h>
@@ -26,6 +6,7 @@
 
 #include "mainwindow.h"
 #include "chatwindow.h"
+#include "optionswindow.h"
 #include "../sodium_secret_layer.h"
 #include "../client_manager.h"
 
@@ -42,7 +23,19 @@ int main(int argc, char *argv[])
     std::thread thread2([](){default_event_loop.run();});
 
     connection_layer conn;
-    conn.add_connection({io_service, {"localhost", "48768"}});
+
+    {
+        QSettings settings("zydd", "htuchi");
+        QString server = settings.value("server").toString();
+        QString port = QString::number(settings.value("port", 48768).toInt());
+
+        if (server.isEmpty()) OptionsWindow().exec();
+
+        server = settings.value("server").toString();
+        if (server.isEmpty()) return 1;
+
+        conn.add_connection({io_service, {server.toStdString(), port.toStdString()}});
+    }
 
     auto wnd = new MainWindow();
 

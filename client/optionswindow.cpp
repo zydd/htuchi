@@ -15,16 +15,13 @@ OptionsWindow::OptionsWindow(QWidget *parent)
     ui->nameEdit->setText(_settings.value("username").toString());
     if (_settings.value("key").isNull())
         ui->passwordEdit->setPlaceholderText(QString());
+    ui->serverEdit->setText(_settings.value("server").toString());
+    ui->portSpin->setValue(_settings.value("port", 48768).toInt());
 
 }
 
 void OptionsWindow::accept()
 {
-    if (ui->nameEdit->text() != _settings.value("username").toString()) {
-        _settings.setValue("username", ui->nameEdit->text());
-        emit infoUpdated();
-    }
-
     if (!ui->passwordEdit->text().isEmpty()) {
         bool ok;
         QString password = QInputDialog::getText(this, "Password", "Confirm password:", QLineEdit::Password, QString(), &ok);
@@ -52,6 +49,15 @@ void OptionsWindow::accept()
             }
         }
     }
+
+    if (ui->nameEdit->text() != _settings.value("username").toString()) {
+        _settings.setValue("username", ui->nameEdit->text());
+        emit infoUpdated();
+    }
+
+    _settings.setValue("server",ui->serverEdit->text());
+    _settings.setValue("port",ui->portSpin->value());
+
     QDialog::accept();
 }
 
